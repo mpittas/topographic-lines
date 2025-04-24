@@ -169,21 +169,24 @@ function generateTerrain() {
     // Base large-scale noise
     const noise1 = noise.noise(x / currentNoiseScale, z / currentNoiseScale, noiseSeed);
     
-    // Higher frequency detail noise
+    // Single-scale noise for cohesive formations
     const noise2 = noise.noise(
-        x / (currentNoiseScale * 0.3), 
-        z / (currentNoiseScale * 0.3), 
+        x / (currentNoiseScale * 1.2),  // Slightly larger scale
+        z / (currentNoiseScale * 1.2), 
         noiseSeed + 100
     );
     
-    // Combined noise with different weights
-    const combinedNoise = (noise1 * 0.7) + (noise2 * 0.3);
+    // Strong primary noise dominance
+    const combinedNoise = (noise1 * 0.97) + (noise2 * 0.03);  // 97/3 ratio
     
-    // Exponential scaling for sharper peaks
-    const expNoise = Math.pow((combinedNoise + 1) / 2, 2.5);
+    // Linear scaling for smooth slopes
+    const expNoise = (combinedNoise + 1) / 2;  // Removed exponential scaling
     
-    // Final height with erosion simulation
-    const slopeFactor = 1 + Math.abs(noise1 - noise2) * 0.8;
+    // Nearly flat erosion effect
+    const slopeFactor = 1 + Math.abs(noise1 - noise2) * 0.1;  // Reduced to 0.1
+    
+    // Very high minimum elevation
+    const minHeight = currentMinHeightFactor * currentMaxHeight * 1.7;  // Increased by 70%
     const finalHeight = expNoise * currentMaxHeight * slopeFactor;
     
     // Apply minimum height factor
