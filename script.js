@@ -26,8 +26,8 @@ const minTerrainHeightFactor = 0.1; // << NEW PROP (e.g., 0.1 means 10% min heig
 
 // Distance Fading Configuration ("Props" to control the fade)
 // Adjust these values to control how the lines fade with distance:
-const minFadeDistance = 60; // Start fading lines closer (previously terrainSize * 0.2)
-const maxFadeDistance = 660; // Lines fully faded further out (previously terrainSize * 1.2)
+const minFadeDistance = 160; // Start fading lines closer (previously terrainSize * 0.2)
+const maxFadeDistance = 960; // Lines fully faded further out (previously terrainSize * 1.2)
 const fadeRange = maxFadeDistance - minFadeDistance; // Pre-calculate range
 
 // --- NEW: Zoom Limit Configuration ---
