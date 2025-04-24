@@ -6,35 +6,37 @@ import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 // dat.GUI is loaded globally via script tag in index.html
 
 let scene, camera, renderer, controls, gui;
-let terrainMesh, terrainBorder; // Added terrainBorder
-const contourLinesGroup = new THREE.Group(); // Group to hold all contour lines
+let terrainMesh, terrainBorder;
+const contourLinesGroup = new THREE.Group();
 
 // --- Configuration Object ---
 const config = {
     // Terrain Shape
-    terrainSize: 800,       // Size of the terrain plane
-    terrainSegments: 150,   // Resolution
-    terrainMaxHeight: 125,  // Max height of peaks
-    noiseScale: 130,        // Controls size of terrain features
-    minTerrainHeightFactor: 0.01, // Controls how low valleys go
+    terrainSize: 800,
+    terrainSegments: 150,
+    terrainMaxHeight: 130,
+    noiseScale: 100,
+    minTerrainHeightFactor: 0.3,
 
     // Contours
-    contourInterval: 4,     // Height difference between contour lines
-    contourColor: '#d95f20', // Orange color
-    backgroundColor: '#f0efe6', // Off-white background
+    contourInterval: 4,
+    contourColor: '#d95f20',
+    backgroundColor: '#f0efe6',
 
     // Fading
-    minFadeDistance: 260,   // Start fading lines closer
-    maxFadeDistance: 800,   // Lines fully faded further
+    minFadeDistance: 260,
+    maxFadeDistance: 800,
 
     // Camera / Controls
-    minZoomDistance: 220,   // Minimum distance camera can be from the center
-    maxZoomDistance: 340,   // Maximum distance camera can be from the center
+    minZoomDistance: 280,
+    maxZoomDistance: 340,
     enableZoom: true,
-    enableRotate: true,
+    enableRotate: true, // This now primarily controls horizontal rotation enable/disable
+    enableVerticalRotate: false, // << NEW: Toggle for vertical tilt, default false (locked)
+    fixedVerticalAngle: Math.PI / 3.5, // << NEW: Store the default fixed angle
 
     // Debugging
-    showTerrainBorder: false // << NEW: Toggle for border visibility
+    showTerrainBorder: false
 };
 
 // --- Derived Configuration ---
@@ -53,9 +55,16 @@ function init() {
 
     // Camera
     const aspect = window.innerWidth / window.innerHeight;
-    camera = new THREE.PerspectiveCamera(65, aspect, 1, config.terrainSize * 2.5); // Increased far plane slightly
-    camera.position.set(0, config.terrainMaxHeight * 2.0, config.terrainMaxHeight * 1.2);
+    camera = new THREE.PerspectiveCamera(65, aspect, 1, config.terrainSize * 2.5);
+    // Set initial position based on the fixed angle
+    const initialRadius = (config.minZoomDistance + config.maxZoomDistance) / 2; // Start in middle of zoom range
+    camera.position.set(
+        0,
+        initialRadius * Math.cos(config.fixedVerticalAngle), // Calculate initial Y based on angle
+        initialRadius * Math.sin(config.fixedVerticalAngle)  // Calculate initial Z based on angle
+    );
     camera.lookAt(0, 0, 0);
+
 
     // Renderer
     renderer = new THREE.WebGLRenderer({ antialias: true, precision: 'mediump', powerPreference: 'high-performance' });
@@ -65,13 +74,13 @@ function init() {
 
     // Controls
     controls = new OrbitControls(camera, renderer.domElement);
-    updateControls();
+    updateControls(); // Apply initial control settings
 
     // Initial Generation
-    updateVisualization(); // Generates terrain and contours
+    updateVisualization();
 
-    // Create Terrain Border (after terrain exists)
-    createTerrainBorder(); // << NEW
+    // Create Terrain Border
+    createTerrainBorder();
 
     // Hide info message
     const infoElement = document.getElementById('info');
@@ -89,24 +98,38 @@ function init() {
 
 // --- Fog Update ---
 function updateFog() {
-    if (scene.fog) scene.fog = null;
+    if (scene.fog) scene.fog = null; // Clear existing fog if any
     scene.fog = new THREE.Fog(config.backgroundColor, config.maxFadeDistance * 0.8, config.maxFadeDistance * 1.4);
 }
 
+
 // --- Controls Update ---
 function updateControls() {
-    controls.enableRotate = config.enableRotate;
+    controls.enableRotate = config.enableRotate || config.enableVerticalRotate; // Rotation is enabled if either horizontal or vertical is
     controls.enableZoom = config.enableZoom;
-    controls.enablePan = false;
+    controls.enablePan = false; // Keep panning disabled
     controls.minDistance = config.minZoomDistance;
     controls.maxDistance = config.maxZoomDistance;
-    controls.minPolarAngle = Math.PI / 3.5;
-    controls.maxPolarAngle = Math.PI / 3.5;
-    controls.target.set(0, 0, 0);
-    controls.update();
+
+    // --- MODIFICATION START: Set Polar Angle Limits ---
+    if (config.enableVerticalRotate) {
+        // Allow vertical rotation within a reasonable range
+        // (e.g., 0.1 to PI - 0.1 to avoid gimbal lock or looking straight up/down)
+        controls.minPolarAngle = 0.1;
+        controls.maxPolarAngle = Math.PI - 0.1;
+    } else {
+        // Lock vertical rotation to the fixed angle
+        controls.minPolarAngle = config.fixedVerticalAngle;
+        controls.maxPolarAngle = config.fixedVerticalAngle;
+    }
+    // --- MODIFICATION END ---
+
+    controls.target.set(0, 0, 0); // Ensure target is always the center
+    controls.update(); // Apply the changes to the controls
 }
 
 // --- Terrain Generation ---
+// ... (no changes needed in this function) ...
 function generateTerrain() {
     if (terrainMesh && terrainMesh.geometry) terrainMesh.geometry.dispose();
 
@@ -131,7 +154,9 @@ function generateTerrain() {
     return terrainMesh;
 }
 
-// --- Create Terrain Border --- << NEW FUNCTION
+
+// --- Create Terrain Border ---
+// ... (no changes needed in this function) ...
 function createTerrainBorder() {
     // Dispose previous border if exists
     if (terrainBorder) {
@@ -163,24 +188,35 @@ function createTerrainBorder() {
     scene.add(terrainBorder);
 }
 
+
 // --- Contour Line Generation ---
+// ... (no changes needed in this function, but ensure material cloning if needed) ...
 function generateContourLines(geometry) {
     while (contourLinesGroup.children.length > 0) {
         const line = contourLinesGroup.children[0];
         if (line.geometry) line.geometry.dispose();
-        if (line.material) line.material.dispose();
+        // Check if material is shared before disposing - cloning might be safer
+        if (line.material && line.material.dispose) line.material.dispose();
         contourLinesGroup.remove(line);
     }
 
     const vertices = geometry.attributes.position.array;
     const index = geometry.index ? geometry.index.array : null;
-    if (!index) return;
+    if (!index) {
+        console.error("Geometry has no index buffer.");
+        return;
+    };
 
-    const contourMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2, vertexColors: true });
-    baseContourColor = new THREE.Color(config.contourColor);
+    // Create one base material instance
+    const contourMaterial = new THREE.LineBasicMaterial({
+        color: 0xffffff, // Use white base color for vertex coloring
+        linewidth: 2,
+        vertexColors: true
+    });
+    baseContourColor = new THREE.Color(config.contourColor); // Update base color reference
 
     const lines = {};
-    function getIntersection(p1, p2, height) { /* ... (no changes) ... */
+    function getIntersection(p1, p2, height) {
         const p1y = p1.y;
         const p2y = p2.y;
         if ((p1y < height && p2y < height) || (p1y >= height && p2y >= height)) {
@@ -199,17 +235,21 @@ function generateContourLines(geometry) {
         const maxY = Math.max(v1.y, v2.y, v3.y);
 
         for (let h = Math.ceil(minY / config.contourInterval) * config.contourInterval; h <= maxY && h < config.terrainMaxHeight; h += config.contourInterval) {
-             if (h < (config.minTerrainHeightFactor * config.terrainMaxHeight) && h <= 0) continue;
+             // Skip contours below the minimum possible terrain height, unless it's exactly 0 and the factor allows it
+             if (h < (config.minTerrainHeightFactor * config.terrainMaxHeight) && h <= 0 && config.minTerrainHeightFactor > 0) continue;
+             // Also skip exactly 0 if interval is > 0 to avoid line at base plane
+             if (h <= 0 && config.contourInterval > 0) continue;
+
             const intersections = [];
             const edge12 = getIntersection(v1, v2, h), edge23 = getIntersection(v2, v3, h), edge31 = getIntersection(v3, v1, h);
             if (edge12) intersections.push(edge12); if (edge23) intersections.push(edge23); if (edge31) intersections.push(edge31);
 
             if (intersections.length >= 2) {
                 if (!lines[h]) lines[h] = { points: [], colors: [] };
-                const baseColor = baseContourColor;
+                const baseColor = baseContourColor; // Use the updated base color reference
                 lines[h].points.push(intersections[0].x, intersections[0].y, intersections[0].z, intersections[1].x, intersections[1].y, intersections[1].z);
                 lines[h].colors.push(baseColor.r, baseColor.g, baseColor.b, baseColor.r, baseColor.g, baseColor.b);
-                 if (intersections.length === 3) {
+                 if (intersections.length === 3) { // Handle rare case
                      lines[h].points.push(intersections[1].x, intersections[1].y, intersections[1].z, intersections[2].x, intersections[2].y, intersections[2].z);
                      lines[h].colors.push(baseColor.r, baseColor.g, baseColor.b, baseColor.r, baseColor.g, baseColor.b);
                  }
@@ -223,15 +263,18 @@ function generateContourLines(geometry) {
             const lineGeometry = new THREE.BufferGeometry();
             lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(levelData.points, 3));
             lineGeometry.setAttribute('color', new THREE.Float32BufferAttribute(levelData.colors, 3));
-            lineGeometry.computeBoundingSphere();
-            const contourLine = new THREE.LineSegments(lineGeometry, contourMaterial.clone());
+            lineGeometry.computeBoundingSphere(); // Important for potential culling/fading optimizations
+            // Use the single material instance for all line segments
+            const contourLine = new THREE.LineSegments(lineGeometry, contourMaterial);
             contourLinesGroup.add(contourLine);
         }
     }
-    if (!contourLinesGroup.parent) scene.add(contourLinesGroup);
+    if (!contourLinesGroup.parent) scene.add(contourLinesGroup); // Add group to scene if not already added
 }
 
+
 // --- Update Visualization ---
+// ... (no changes needed in this function) ...
 function updateVisualization() {
     console.log("Updating visualization...");
     fadeRange = config.maxFadeDistance - config.minFadeDistance;
@@ -241,12 +284,13 @@ function updateVisualization() {
 
     const terrain = generateTerrain();
     generateContourLines(terrain.geometry);
-    createTerrainBorder(); // Recreate border in case terrainSize changes (though not currently in GUI)
+    createTerrainBorder(); // Recreate border in case terrainSize changes
 
     updateFog();
-    updateControls();
+    updateControls(); // Ensure controls reflect latest config (e.g., if fixed angle changed)
     console.log("Update complete.");
 }
+
 
 // --- Setup dat.GUI ---
 function setupGUI() {
@@ -262,14 +306,14 @@ function setupGUI() {
     // Contours Folder
     const contoursFolder = gui.addFolder('Contours');
     contoursFolder.add(config, 'contourInterval', 1, 50, 1).name('Interval').onFinishChange(updateVisualization);
-    contoursFolder.addColor(config, 'contourColor').name('Line Color').onChange(() => { baseContourColor = new THREE.Color(config.contourColor); });
+    contoursFolder.addColor(config, 'contourColor').name('Line Color').onChange(() => { baseContourColor = new THREE.Color(config.contourColor); }); // Update color ref immediately
     contoursFolder.addColor(config, 'backgroundColor').name('Background').onChange(() => { fadeToBgColor = new THREE.Color(config.backgroundColor); scene.background = fadeToBgColor; updateFog(); });
     // contoursFolder.open();
 
     // Fading Folder
     const fadingFolder = gui.addFolder('Distance Fading');
-    fadingFolder.add(config, 'minFadeDistance', 0, 1000, 10).name('Min Fade Dist').onChange(() => { fadeRange = config.maxFadeDistance - config.minFadeDistance; });
-    fadingFolder.add(config, 'maxFadeDistance', 100, 2000, 10).name('Max Fade Dist').onChange(() => { fadeRange = config.maxFadeDistance - config.minFadeDistance; updateFog(); });
+    fadingFolder.add(config, 'minFadeDistance', 0, 1000, 10).name('Min Fade Dist').onChange(() => { fadeRange = Math.max(1, config.maxFadeDistance - config.minFadeDistance); }); // Prevent zero/negative range
+    fadingFolder.add(config, 'maxFadeDistance', 100, 2000, 10).name('Max Fade Dist').onChange(() => { fadeRange = Math.max(1, config.maxFadeDistance - config.minFadeDistance); updateFog(); }); // Prevent zero/negative range
     // fadingFolder.open();
 
     // Camera Folder
@@ -277,10 +321,13 @@ function setupGUI() {
     cameraFolder.add(config, 'minZoomDistance', 10, 1000, 5).name('Min Zoom').onChange(updateControls);
     cameraFolder.add(config, 'maxZoomDistance', 50, 2000, 5).name('Max Zoom').onChange(updateControls);
     cameraFolder.add(config, 'enableZoom').name('Enable Zoom').onChange(updateControls);
-    cameraFolder.add(config, 'enableRotate').name('Enable Rotate').onChange(updateControls);
+    cameraFolder.add(config, 'enableRotate').name('Enable Horiz Rotate').onChange(updateControls); // Clarified name
+    // --- MODIFICATION START: Add Vertical Rotate Toggle ---
+    cameraFolder.add(config, 'enableVerticalRotate').name('Enable Vert Rotate').onChange(updateControls);
+    // --- MODIFICATION END ---
     // cameraFolder.open();
 
-    // Debug Folder << NEW
+    // Debug Folder
     const debugFolder = gui.addFolder('Debugging');
     debugFolder.add(config, 'showTerrainBorder').name('Show Border').onChange((value) => {
         if (terrainBorder) terrainBorder.visible = value;
@@ -289,6 +336,7 @@ function setupGUI() {
 }
 
 // --- Window Resize ---
+// ... (no changes needed in this function) ...
 function onWindowResize() {
     const aspect = window.innerWidth / window.innerHeight;
     camera.aspect = aspect;
@@ -296,41 +344,67 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+
 // --- Animation Loop ---
+// ... (minor optimization in fade check) ...
 const tempVec3 = new THREE.Vector3();
 const tempColor = new THREE.Color();
 
 function animate() {
     requestAnimationFrame(animate);
-    if (config.enableRotate || config.enableZoom) controls.update();
+    // Only call controls.update() if controls are actually enabled
+    // and might change the camera view (rotation or zoom)
+    if (controls.enabled && (config.enableRotate || config.enableVerticalRotate || config.enableZoom)) {
+         controls.update();
+    }
+
 
     // --- Distance-Based Vertex Color Fading ---
     const cameraPosition = camera.position;
     contourLinesGroup.children.forEach(line => {
+        // Basic check if geometry and attributes exist
         if (!line.geometry || !line.geometry.attributes.position || !line.geometry.attributes.color) return;
-        line.visible = true;
+
+        line.visible = true; // Assume visible unless culled later (if culling added)
         const geometry = line.geometry;
         const positions = geometry.attributes.position.array;
         const colors = geometry.attributes.color.array;
         let colorsNeedUpdate = false;
+
         for (let i = 0; i < positions.length; i += 3) {
             tempVec3.set(positions[i], positions[i + 1], positions[i + 2]);
             const distance = tempVec3.distanceTo(cameraPosition);
-            const currentFadeRange = Math.max(1, fadeRange);
+
+            // Ensure fadeRange is at least a small positive number to avoid division by zero
+            const currentFadeRange = Math.max(1.0, fadeRange); // Use 1.0 or a small epsilon
+
+            // Calculate fade factor (0 = no fade/close, 1 = full fade/far)
             const fadeFactor = Math.min(Math.max((distance - config.minFadeDistance) / currentFadeRange, 0), 1);
+
+            // Interpolate color from base contour color to background color
             tempColor.copy(baseContourColor).lerp(fadeToBgColor, fadeFactor);
-            if (Math.abs(colors[i] - tempColor.r) > 0.001 || Math.abs(colors[i + 1] - tempColor.g) > 0.001 || Math.abs(colors[i + 2] - tempColor.b) > 0.001) {
-                colors[i] = tempColor.r; colors[i + 1] = tempColor.g; colors[i + 2] = tempColor.b;
+
+            // Update the color buffer only if the color actually changed significantly
+            // Using a small threshold can sometimes reduce GPU buffer updates
+            const threshold = 0.005; // Adjust if needed
+            if (Math.abs(colors[i] - tempColor.r) > threshold || Math.abs(colors[i + 1] - tempColor.g) > threshold || Math.abs(colors[i + 2] - tempColor.b) > threshold) {
+                colors[i] = tempColor.r;
+                colors[i + 1] = tempColor.g;
+                colors[i + 2] = tempColor.b;
                 colorsNeedUpdate = true;
             }
         }
-        if (colorsNeedUpdate) geometry.attributes.color.needsUpdate = true;
+
+        // If any colors were changed, mark the attribute for update
+        if (colorsNeedUpdate) {
+            geometry.attributes.color.needsUpdate = true;
+        }
     });
 
-    // Update border visibility (in case it wasn't caught by GUI onChange)
-    if (terrainBorder && terrainBorder.visible !== config.showTerrainBorder) {
-        terrainBorder.visible = config.showTerrainBorder;
-    }
+    // Update border visibility (redundant check, GUI onChange should handle it)
+    // if (terrainBorder && terrainBorder.visible !== config.showTerrainBorder) {
+    //     terrainBorder.visible = config.showTerrainBorder;
+    // }
 
     renderer.render(scene, camera);
 }
