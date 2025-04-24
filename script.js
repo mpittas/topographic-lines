@@ -25,11 +25,11 @@ const config = {
 
     // Fading
     minFadeDistance: 200, // << INCREASED
-    maxFadeDistance: 440, // << INCREASED significantly
+    maxFadeDistance: 640, // << INCREASED significantly
 
     // Camera / Controls
     minZoomDistance: 280,
-    maxZoomDistance: 340,
+    maxZoomDistance: 540,
     enableZoom: true,
     enableRotate: true, // This now primarily controls horizontal rotation enable/disable
     enableVerticalRotate: false, // << NEW: Toggle for vertical tilt, default false (locked)
