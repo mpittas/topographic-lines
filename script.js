@@ -24,8 +24,8 @@ const config = {
     backgroundColor: '#f0efe6',
 
     // Fading
-    minFadeDistance: 800, // << INCREASED
-    maxFadeDistance: 2500, // << INCREASED significantly
+    minFadeDistance: 200, // << INCREASED
+    maxFadeDistance: 440, // << INCREASED significantly
 
     // Camera / Controls
     minZoomDistance: 280,
@@ -33,7 +33,8 @@ const config = {
     enableZoom: true,
     enableRotate: true, // This now primarily controls horizontal rotation enable/disable
     enableVerticalRotate: false, // << NEW: Toggle for vertical tilt, default false (locked)
-    fixedVerticalAngle: Math.PI / 3.5, // << NEW: Store the default fixed angle
+    fixedVerticalAngle: Math.PI / 3, // << NEW: Store the default fixed angle
+    enablePan: false, // << ADDED: Toggle for right-mouse-button panning
 
     // Debugging
     showTerrainBorder: false
@@ -114,7 +115,7 @@ function updateFog() {
 function updateControls() {
     controls.enableRotate = config.enableRotate || config.enableVerticalRotate; // Rotation is enabled if either horizontal or vertical is
     controls.enableZoom = config.enableZoom;
-    controls.enablePan = false; // Keep panning disabled
+    controls.enablePan = config.enablePan; // << UPDATED: Control panning via config
     controls.minDistance = config.minZoomDistance;
     controls.maxDistance = config.maxZoomDistance;
 
@@ -351,6 +352,7 @@ function setupGUI() {
     // --- MODIFICATION START: Add Vertical Rotate Toggle ---
     cameraFolder.add(config, 'enableVerticalRotate').name('Enable Vert Rotate').onChange(updateControls);
     // --- MODIFICATION END ---
+    cameraFolder.add(config, 'enablePan').name('Enable Pan (RMB)').onChange(updateControls); // << ADDED: Pan toggle
     // cameraFolder.open();
 
     // Debug Folder
