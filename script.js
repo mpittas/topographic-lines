@@ -12,10 +12,10 @@ const contourLinesGroup = new THREE.Group();
 // --- Configuration Object ---
 const config = {
     // Terrain Shape
-    terrainSize: 800,
-    terrainSegments: 150,
+    terrainSize: 1000, // << INCREASED
+    terrainSegments: 350, // << INCREASED proportionally
     terrainMaxHeight: 130,
-    noiseScale: 100,
+    noiseScale: 100, // Note: May need adjustment for larger terrain feel
     minTerrainHeightFactor: 0.3,
 
     // Contours
@@ -24,8 +24,8 @@ const config = {
     backgroundColor: '#f0efe6',
 
     // Fading
-    minFadeDistance: 260,
-    maxFadeDistance: 800,
+    minFadeDistance: 800, // << INCREASED
+    maxFadeDistance: 2500, // << INCREASED significantly
 
     // Camera / Controls
     minZoomDistance: 280,
@@ -55,7 +55,8 @@ function init() {
 
     // Camera
     const aspect = window.innerWidth / window.innerHeight;
-    camera = new THREE.PerspectiveCamera(65, aspect, 1, config.terrainSize * 2.5);
+    // Adjust far plane based on the NEW larger terrain size
+    camera = new THREE.PerspectiveCamera(65, aspect, 1, config.terrainSize * 2.5); // Far plane now 5000
     // Set initial position based on the fixed angle
     const initialRadius = (config.minZoomDistance + config.maxZoomDistance) / 2; // Start in middle of zoom range
     camera.position.set(
@@ -67,7 +68,12 @@ function init() {
 
 
     // Renderer
-    renderer = new THREE.WebGLRenderer({ antialias: true, precision: 'mediump', powerPreference: 'high-performance' });
+    renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        precision: 'mediump',
+        powerPreference: 'high-performance',
+        alpha: true // <<< ADDED: Enable transparency for export
+    });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     document.body.appendChild(renderer.domElement);
@@ -99,6 +105,7 @@ function init() {
 // --- Fog Update ---
 function updateFog() {
     if (scene.fog) scene.fog = null; // Clear existing fog if any
+    // Adjust fog distances based on the NEW larger fade distances
     scene.fog = new THREE.Fog(config.backgroundColor, config.maxFadeDistance * 0.8, config.maxFadeDistance * 1.4);
 }
 
@@ -292,6 +299,25 @@ function updateVisualization() {
 }
 
 
+// --- Export Function ---
+function exportToPNG() {
+    const originalBackground = scene.background; // Store original background
+    scene.background = null; // Set background to transparent for capture
+    renderer.render(scene, camera); // Render one frame with transparent bg
+
+    const dataURL = renderer.domElement.toDataURL('image/png'); // Get data URL
+
+    scene.background = originalBackground; // Restore original background
+    renderer.render(scene, camera); // Render again to show original bg on screen
+
+    // Trigger download
+    const link = document.createElement('a');
+    link.download = 'topographic-export.png';
+    link.href = dataURL;
+    link.click();
+}
+
+
 // --- Setup dat.GUI ---
 function setupGUI() {
     gui = new dat.GUI();
@@ -333,6 +359,9 @@ function setupGUI() {
         if (terrainBorder) terrainBorder.visible = value;
     });
     // debugFolder.open();
+
+    // Export Button (added outside folders for prominence)
+    gui.add({ export: exportToPNG }, 'export').name('Export PNG');
 }
 
 // --- Window Resize ---
