@@ -1,0 +1,16 @@
+{
+  "name": "topographic-lines",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "dat.gui": "^0.7.9",
+    "three": "^0.158.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

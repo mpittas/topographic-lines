@@ -32,7 +32,7 @@ const randomRanges = {
 const config = {
     // Terrain Shape (These will be slightly randomized on generation)
     terrainSize: 1000,
-    terrainSegments: 350,
+    terrainSegments: 500,
     terrainMaxHeight: baseConfig.terrainMaxHeight,
     noiseScale: baseConfig.noiseScale,
     minTerrainHeightFactor: baseConfig.minTerrainHeightFactor,
@@ -166,10 +166,31 @@ function generateTerrain() {
 
     for (let i = 0, j = 0; i < vertices.length; i++, j += 3) {
         const x = vertices[j], z = vertices[j + 2];
-        const noiseValue = noise.noise(x / currentNoiseScale, z / currentNoiseScale, noiseSeed);
-        const normalizedHeightZeroToOne = (noiseValue + 1) / 2;
-        const mappedHeightFactor = (normalizedHeightZeroToOne * (1 - currentMinHeightFactor)) + currentMinHeightFactor;
-        vertices[j + 1] = mappedHeightFactor * currentMaxHeight;
+    // Base large-scale noise
+    const noise1 = noise.noise(x / currentNoiseScale, z / currentNoiseScale, noiseSeed);
+    
+    // Higher frequency detail noise
+    const noise2 = noise.noise(
+        x / (currentNoiseScale * 0.3), 
+        z / (currentNoiseScale * 0.3), 
+        noiseSeed + 100
+    );
+    
+    // Combined noise with different weights
+    const combinedNoise = (noise1 * 0.7) + (noise2 * 0.3);
+    
+    // Exponential scaling for sharper peaks
+    const expNoise = Math.pow((combinedNoise + 1) / 2, 2.5);
+    
+    // Final height with erosion simulation
+    const slopeFactor = 1 + Math.abs(noise1 - noise2) * 0.8;
+    const finalHeight = expNoise * currentMaxHeight * slopeFactor;
+    
+    // Apply minimum height factor
+    vertices[j + 1] = Math.max(
+        currentMinHeightFactor * currentMaxHeight, 
+        finalHeight
+    );
     }
     geometry.computeVertexNormals();
     geometry.attributes.position.needsUpdate = true;
