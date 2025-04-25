@@ -14,6 +14,12 @@ export const randomRanges = {
     enableIntervalRandomization: true
 };
 
+export const Styles = {
+    FILLED_MOUNTAIN: 'Filled Mountain',
+    LINES_ONLY: 'Lines Only',
+    FADING_LINES: 'Fading Lines'
+};
+
 // Main scene configuration with derived/visual settings
 export const config = {
     terrainSize: 1000,
@@ -24,12 +30,14 @@ export const config = {
     plateauVolume: 0.0,
 
     contourInterval: baseConfig.contourInterval,
-    contourColor: '#f09393',
-    backgroundColor: '#f0efe6',
+    contourColor: '#f5bfbf',
+    backgroundColor: '#ebd7d7',
+    lineOpacity: 1.0,
+    fillOpacity: 0.4,
 
-    minFadeDistance: 200,
+    minFadeDistance: 100,
     maxFadeDistance: 640,
-    fogIntensity: 0.8,
+    fogIntensity: 0.5,
 
     minZoomDistance: 380,
     maxZoomDistance: 540,
@@ -38,7 +46,8 @@ export const config = {
     enableVerticalRotate: false,
     fixedVerticalAngle: Math.PI / 3,
 
-    showTerrainBorder: false
+    showTerrainBorder: false,
+    style: Styles.LINES_ONLY // Default style
 };
 
 export let fadeRange = config.maxFadeDistance - config.minFadeDistance;

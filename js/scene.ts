@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { config } from './config';
+import { config } from './config.js';
 
 let scene: THREE.Scene;
-let camera: THREE.PerspectiveCamera;
+export let camera: THREE.PerspectiveCamera;
 let renderer: THREE.WebGLRenderer;
 let controls: OrbitControls;
 
