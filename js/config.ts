@@ -30,8 +30,8 @@ export const config = {
     plateauVolume: 0.0,
 
     contourInterval: baseConfig.contourInterval,
-    contourColor: '#f5bfbf',
-    backgroundColor: '#ebd7d7',
+    contourColor: '#f5b7bc',
+    backgroundColor: '#f2e5ea',
     lineOpacity: 1.0,
     fillOpacity: 0.4,
 
@@ -47,7 +47,7 @@ export const config = {
     fixedVerticalAngle: Math.PI / 3,
 
     showTerrainBorder: false,
-    style: Styles.LINES_ONLY // Default style
+    style: Styles.FADING_LINES // Default style
 };
 
 export let fadeRange = config.maxFadeDistance - config.minFadeDistance;
