@@ -6,10 +6,7 @@ let terrainMesh: THREE.Mesh | null = null;
 const contourLinesGroup = new THREE.Group();
 let terrainBorder: THREE.Line | null = null;
 
-// --- Terrain Generation ---
 export function generateTerrain(): THREE.Mesh {
-    if (terrainMesh && terrainMesh.geometry) terrainMesh.geometry.dispose();
-
     const geometry = new THREE.PlaneGeometry(config.terrainSize, config.terrainSize, config.terrainSegments, config.terrainSegments);
     geometry.rotateX(-Math.PI / 2);
 
@@ -17,43 +14,30 @@ export function generateTerrain(): THREE.Mesh {
     const noise = new ImprovedNoise();
     const noiseSeed = Math.random() * 100;
 
-    // Use the current (potentially randomized) config values
     const currentMaxHeight = config.terrainMaxHeight;
     const currentNoiseScale = config.noiseScale;
     const currentMinHeightFactor = config.minTerrainHeightFactor;
-    const currentPlateauVolume = config.plateauVolume; // Get plateau volume
+    const currentPlateauVolume = config.plateauVolume;
 
-    // Calculate the height above which flattening occurs
-    // Ranges from currentMaxHeight (vol=0) down to 0.5 * currentMaxHeight (vol=1)
     const plateauCutoffHeight = currentMaxHeight * (1 - currentPlateauVolume * 0.5);
 
     for (let i = 0, j = 0; i < vertices.length; i++, j += 3) {
         const x = vertices[j], z = vertices[j + 2];
-        // Base large-scale noise
         const noise1 = noise.noise(x / currentNoiseScale, z / currentNoiseScale, noiseSeed);
-        // Single-scale noise for cohesive formations
         const noise2 = noise.noise(
-            x / (currentNoiseScale * 1.2),  // Slightly larger scale
+            x / (currentNoiseScale * 1.2),
             z / (currentNoiseScale * 1.2),
             noiseSeed + 100
         );
-        // Strong primary noise dominance
-        const combinedNoise = (noise1 * 0.97) + (noise2 * 0.03);  // 97/3 ratio
-        // Linear scaling for smooth slopes
-        const expNoise = (combinedNoise + 1) / 2;  // Removed exponential scaling
-        // Nearly flat erosion effect
-        const slopeFactor = 1 + Math.abs(noise1 - noise2) * 0.1;  // Reduced to 0.1
-        // Very high minimum elevation
-        // const minHeight = currentMinHeightFactor * currentMaxHeight * 1.7; // This wasn't used, removed
-        let finalHeight = expNoise * currentMaxHeight * slopeFactor; // Use let to allow modification
+        const combinedNoise = (noise1 * 0.97) + (noise2 * 0.03);
+        const expNoise = (combinedNoise + 1) / 2;
+        const slopeFactor = 1 + Math.abs(noise1 - noise2) * 0.1;
+        let finalHeight = expNoise * currentMaxHeight * slopeFactor;
 
-        // Apply plateau effect
-        // If volume > 0 and height is above the cutoff, interpolate towards the cutoff
         if (currentPlateauVolume > 0 && finalHeight > plateauCutoffHeight) {
              finalHeight = plateauCutoffHeight + (finalHeight - plateauCutoffHeight) * (1 - currentPlateauVolume);
         }
 
-        // Apply minimum height factor AFTER plateau effect
         vertices[j + 1] = Math.max(
             currentMinHeightFactor * currentMaxHeight,
             finalHeight
@@ -62,23 +46,19 @@ export function generateTerrain(): THREE.Mesh {
     geometry.computeVertexNormals();
     geometry.attributes.position.needsUpdate = true;
 
-    // Use a basic material, visibility is handled elsewhere or not needed if only contours are shown
     const material = new THREE.MeshBasicMaterial({ color: 0xcccccc, wireframe: true, visible: false });
     if (!terrainMesh) {
         terrainMesh = new THREE.Mesh(geometry, material);
     } else {
-        terrainMesh.geometry = geometry; // Reuse mesh object, replace geometry
+        terrainMesh.geometry = geometry;
     }
     return terrainMesh;
 }
 
-// --- Contour Line Generation ---
 export function generateContourLines(geometry: THREE.BufferGeometry, baseContourColor: THREE.Color): THREE.Group {
-    // Clear existing lines
     while (contourLinesGroup.children.length > 0) {
         const line = contourLinesGroup.children[0];
         if ((line as THREE.LineSegments).geometry) (line as THREE.LineSegments).geometry.dispose();
-        // Material is shared, dispose separately
         contourLinesGroup.remove(line);
     }
     if (contourLinesGroup.userData.sharedMaterial) {
@@ -88,13 +68,12 @@ export function generateContourLines(geometry: THREE.BufferGeometry, baseContour
 
     const vertices = geometry.attributes.position.array as Float32Array;
     const index = geometry.index ? geometry.index.array as Uint16Array | Uint32Array : null;
-    if (!index) { console.error("Geometry has no index buffer."); return new THREE.Group(); }; // Return null or empty group
+    if (!index) { console.error("Geometry has no index buffer."); return new THREE.Group(); };
 
-    // Create one shared material for all lines
     const contourMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2, vertexColors: true });
-    contourLinesGroup.userData.sharedMaterial = contourMaterial; // Store for disposal
+    contourLinesGroup.userData.sharedMaterial = contourMaterial;
 
-    const lines: { [key: number]: { points: number[], colors: number[] } } = {}; // Store points and colors per height level
+    const lines: { [key: number]: { points: number[], colors: number[] } } = {};
 
     function getIntersection(p1: THREE.Vector3, p2: THREE.Vector3, height: number): THREE.Vector3 | null {
         const p1y = p1.y; const p2y = p2.y;
@@ -103,7 +82,6 @@ export function generateContourLines(geometry: THREE.BufferGeometry, baseContour
         return p1.clone().lerp(p2, t);
     }
 
-    // Use the current (potentially randomized) config values
     const currentInterval = config.contourInterval;
     const currentMaxHeight = config.terrainMaxHeight;
     const currentMinHeightFactor = config.minTerrainHeightFactor;
@@ -117,9 +95,7 @@ export function generateContourLines(geometry: THREE.BufferGeometry, baseContour
         const maxY = Math.max(v1.y, v2.y, v3.y);
 
         for (let h = Math.ceil(minY / currentInterval) * currentInterval; h <= maxY && h < currentMaxHeight; h += currentInterval) {
-             // Skip contours below the minimum height factor threshold if it's positive
              if (h < (currentMinHeightFactor * currentMaxHeight) && currentMinHeightFactor > 0) continue;
-             // Skip zero/negative height contours if interval is positive (avoids issues with flat bases at y=0)
              if (h <= 0 && currentInterval > 0) continue;
 
             const intersections: THREE.Vector3[] = [];
@@ -128,10 +104,9 @@ export function generateContourLines(geometry: THREE.BufferGeometry, baseContour
 
             if (intersections.length >= 2) {
                 if (!lines[h]) lines[h] = { points: [], colors: [] };
-                // Use the passed baseContourColor
                 lines[h].points.push(intersections[0].x, intersections[0].y, intersections[0].z, intersections[1].x, intersections[1].y, intersections[1].z);
                 lines[h].colors.push(baseContourColor.r, baseContourColor.g, baseContourColor.b, baseContourColor.r, baseContourColor.g, baseContourColor.b);
-                 if (intersections.length === 3) { // Handle intersections on all 3 edges (rare)
+                 if (intersections.length === 3) {
                      lines[h].points.push(intersections[1].x, intersections[1].y, intersections[1].z, intersections[2].x, intersections[2].y, intersections[2].z);
                      lines[h].colors.push(baseContourColor.r, baseContourColor.g, baseContourColor.b, baseContourColor.r, baseContourColor.g, baseContourColor.b);
                  }
@@ -139,28 +114,25 @@ export function generateContourLines(geometry: THREE.BufferGeometry, baseContour
         }
     }
 
-    // Create LineSegments for each height level
     for (const height in lines) {
         const levelData = lines[height];
         if (levelData.points.length > 0) {
             const lineGeometry = new THREE.BufferGeometry();
             lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(levelData.points, 3));
             lineGeometry.setAttribute('color', new THREE.Float32BufferAttribute(levelData.colors, 3));
-            lineGeometry.computeBoundingSphere(); // Important for visibility checks/frustum culling
-            const contourLine = new THREE.LineSegments(lineGeometry, contourMaterial); // Use shared material
+            lineGeometry.computeBoundingSphere();
+            const contourLine = new THREE.LineSegments(lineGeometry, contourMaterial);
             contourLinesGroup.add(contourLine);
         }
     }
-    return contourLinesGroup; // Return the group containing all lines
+    return contourLinesGroup;
 }
 
-
-// --- Create Terrain Border ---
 export function createTerrainBorder(scene: THREE.Scene): THREE.Line {
     if (terrainBorder) {
         if (terrainBorder.geometry) terrainBorder.geometry.dispose();
         if (terrainBorder.material) (terrainBorder.material as THREE.Material).dispose();
-        scene.remove(terrainBorder); // Remove from the scene passed as argument
+        scene.remove(terrainBorder);
         terrainBorder = null;
     }
 
@@ -168,60 +140,34 @@ export function createTerrainBorder(scene: THREE.Scene): THREE.Line {
     const points = [
         new THREE.Vector3(-halfSize, 0, -halfSize), new THREE.Vector3( halfSize, 0, -halfSize),
         new THREE.Vector3( halfSize, 0,  halfSize), new THREE.Vector3(-halfSize, 0,  halfSize),
-        new THREE.Vector3(-halfSize, 0, -halfSize) // Close the loop
+        new THREE.Vector3(-halfSize, 0, -halfSize)
     ];
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     const material = new THREE.LineDashedMaterial({ color: 0x000000, linewidth: 1, scale: 1, dashSize: 10, gapSize: 5 });
     terrainBorder = new THREE.Line(geometry, material);
-    terrainBorder.computeLineDistances(); // Required for dashed lines
+    terrainBorder.computeLineDistances();
     terrainBorder.visible = config.showTerrainBorder;
-    scene.add(terrainBorder); // Add to the scene passed as argument
+    scene.add(terrainBorder);
     return terrainBorder;
 }
 
-// --- Randomize Settings ---
 export function randomizeTerrainSettings(): void {
-    // Max Height: +/- heightRange% of base
-    // Max Height: Random float between 20 and 300
     config.terrainMaxHeight = Math.random() * (300 - 20) + 20;
 
-    // Noise Scale: Random float between 70 and 200
     config.noiseScale = Math.random() * (200 - 70) + 70;
 
-    // Min Height Factor: +/- minHeightRange absolute, clamped between 0 and 0.5
     config.minTerrainHeightFactor = Math.max(0, Math.min(0.5,
         baseConfig.minTerrainHeightFactor + (Math.random() - 0.5) * randomRanges.minHeightRange * 2));
 
-    // Plateau Volume: Random float between 0.0 and 1.0
     config.plateauVolume = Math.random();
 
-    // Contour Interval: Random integer between 2 and 8 if randomization enabled
     if (randomRanges.enableIntervalRandomization) {
-        config.contourInterval = Math.floor(Math.random() * 7) + 2; // Range 2 to 8
+        config.contourInterval = Math.floor(Math.random() * 7) + 2;
     }
-    // else: keep the value set by the GUI
 
-    // Ensure values are within specified bounds
-    // Plateau Volume: Random float between 0.0 and 1.0
     config.plateauVolume = Math.random();
 
-    // Contour Interval: Random integer between 2 and 8 if randomization enabled
     if (randomRanges.enableIntervalRandomization) {
-        config.contourInterval = Math.floor(Math.random() * 7) + 2; // Range 2 to 8
+        config.contourInterval = Math.floor(Math.random() * 7) + 2;
     }
-    // else: keep the value set by the GUI
-
-    // No need for explicit clamping here as the randomization now directly generates values within the desired ranges.
-    // The previous clamping logic is removed.
-
-    console.log("Randomized Settings:", {
-        maxH: config.terrainMaxHeight.toFixed(1) + ` (base ${baseConfig.terrainMaxHeight} ±${randomRanges.heightRange}%)`,
-        noiseS: config.noiseScale.toFixed(1) + ` (base ${baseConfig.noiseScale} ±${randomRanges.noiseRange}%)`,
-        minHF: config.minTerrainHeightFactor.toFixed(2) + ` (base ${baseConfig.minTerrainHeightFactor} ±${randomRanges.minHeightRange})`,
-        plateauV: config.plateauVolume.toFixed(2),
-        interval: config.contourInterval + (randomRanges.enableIntervalRandomization ? ` (random 2-8)` : ' (manual)')
-    });
-
-    // Note: updateDerivedConfig() might be needed if randomization affects derived values directly
-    // Currently, it only affects fadeRange which is recalculated in the animation loop anyway.
 }
