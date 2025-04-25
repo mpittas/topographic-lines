@@ -22,7 +22,7 @@ export const Styles = {
 
 // Main scene configuration with derived/visual settings
 export const config = {
-    terrainSize: 1000,
+    terrainSize: 1500,
     terrainSegments: 200,
     terrainMaxHeight: baseConfig.terrainMaxHeight,
     noiseScale: baseConfig.noiseScale,
@@ -35,7 +35,7 @@ export const config = {
     lineOpacity: 1.0,
     fillOpacity: 0.4,
 
-    minFadeDistance: 100,
+    minFadeDistance: 500,
     maxFadeDistance: 640,
     fogIntensity: 0.5,
 

@@ -14,12 +14,24 @@ export function setupGUI(
     getTerrainBorder: () => THREE.Line | null,
     updateContourColorCallback: (value: string) => void,
     updateBackgroundColorCallback: (value: string) => void,
+    updateFadingLinesFogUniformsCallback: () => void,
     contourLinesGroup: THREE.Group
 ): dat.GUI {
     if (gui) gui.destroy();
     gui = new dat.GUI();
 
-    // Controls for terrain generation parameters
+    // --- Style Folder (Moved to Top) ---
+    const styleFolder = gui.addFolder('Style');
+    styleFolder.add(config, 'style', Object.values(Styles)).name('Render Style')
+        .onFinishChange(() => {
+            // Avoid full regeneration, just update style/material
+            updateVisualizationCallback(false, true); // Pass flag/call simpler refresh
+            // Show/hide opacity controller based on style
+            toggleOpacityControllerVisibility();
+        });
+    styleFolder.open();
+
+    // --- Terrain Shape Folder ---
     const terrainFolder = gui.addFolder('Terrain Shape');
     terrainFolder.add(baseConfig, 'terrainMaxHeight', 20, 300, 5).name('Height')
         .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; })
@@ -40,6 +52,8 @@ export function setupGUI(
             if (contourLinesGroup) contourLinesGroup.visible = true;
         });
     terrainFolder.open();
+
+    // --- Contours Folder ---
     const contoursFolder = gui.addFolder('Contours');
     contoursFolder.add(config, 'contourInterval', 1, 50, 1).name('Interval')
         .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; })
@@ -71,16 +85,6 @@ export function setupGUI(
     contoursFolder.addColor(config, 'backgroundColor').name('Background').onFinishChange(updateBackgroundColorCallback);
     contoursFolder.open();
 
-    // Add Style folder and dropdown
-    const styleFolder = gui.addFolder('Style');
-    styleFolder.add(config, 'style', Object.values(Styles)).name('Render Style')
-        .onFinishChange(() => {
-            // Avoid full regeneration, just update style/material
-            updateVisualizationCallback(false, true); // Pass flag/call simpler refresh
-            // Show/hide opacity controller based on style
-            toggleOpacityControllerVisibility();
-        });
-
     // Function to toggle visibility
     function toggleOpacityControllerVisibility() {
         if (fillOpacityController) { // Check if controller exists
@@ -93,11 +97,12 @@ export function setupGUI(
         }
     }
 
-    styleFolder.open();
-
     const fogFolder = gui.addFolder('Fog');
     fogFolder.add(config, 'fogIntensity', 0, 1, 0.01).name('Intensity')
-        .onFinishChange(updateFog);
+        .onFinishChange(() => {
+            updateFog(); // Update scene fog first
+            updateFadingLinesFogUniformsCallback(); // Call the passed callback
+        });
     fogFolder.open();
 
     // Controls for camera behavior and movement

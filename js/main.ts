@@ -33,6 +33,7 @@ function init(): void {
         () => terrainBorder,
         handleContourColorChange,
         handleBackgroundColorChange,
+        updateFadingLinesFogUniforms,
         contourLinesGroup
     );
 
@@ -157,6 +158,10 @@ function updateVisualization(shouldRandomize: boolean = false, updateStyleOnly: 
     // updateFog(); // Fog color updated in handleBackgroundColorChange
     updateControls(); // Camera controls don't depend on terrain data
 
+    // --- Ensure Fog Uniforms Correct After Potential Style Change ---
+    updateFog(); // Ensure scene fog is correct
+    updateFadingLinesFogUniforms(); // Ensure shader uniforms are correct
+
     // --- GUI Update ---
     updateGUI(); // Refresh GUI to show potentially randomized/updated values
 
@@ -198,6 +203,11 @@ function animate(): void {
             // No per-frame uniform updates needed for height-based fade unless colors/heights change
             // const shaderMaterial = contourLinesGroup.userData.sharedMaterial as THREE.ShaderMaterial;
             // shaderMaterial.uniforms.cameraPosition.value.copy(sceneCamera.position); // REMOVED
+            // UPDATE: Need to update camera position uniform for manual fog
+            const shaderMaterial = contourLinesGroup.userData.sharedMaterial as THREE.ShaderMaterial;
+            if (shaderMaterial.uniforms.u_cameraPosition) {
+                shaderMaterial.uniforms.u_cameraPosition.value.copy(sceneCamera.position);
+            }
         } else if (config.style === Styles.LINES_ONLY &&
                    contourLinesGroup.userData.sharedMaterial instanceof THREE.LineBasicMaterial &&
                    contourLinesGroup.userData.sharedMaterial.vertexColors) {
@@ -267,19 +277,50 @@ function handleContourColorChange(value: string): void {
     // If using Fading Lines, update the baseColor uniform
     if (contourLinesGroup && contourLinesGroup.userData.sharedMaterial instanceof THREE.ShaderMaterial && config.style === Styles.FADING_LINES) {
         const shaderMaterial = contourLinesGroup.userData.sharedMaterial as THREE.ShaderMaterial;
-        shaderMaterial.uniforms.baseColor.value.set(value);
+        if (shaderMaterial.uniforms.baseColor) {
+            shaderMaterial.uniforms.baseColor.value.set(value);
+        }
     }
 }
 
 function handleBackgroundColorChange(value: string): void {
     fadeToBgColor.set(value);
     if (scene) scene.background = fadeToBgColor;
-    updateFog(); // Fog color depends on background
 
-    // If using Fading Lines, update the fogColor uniform
-    if (contourLinesGroup && contourLinesGroup.userData.sharedMaterial instanceof THREE.ShaderMaterial && config.style === Styles.FADING_LINES) {
-        const shaderMaterial = contourLinesGroup.userData.sharedMaterial as THREE.ShaderMaterial;
-        shaderMaterial.uniforms.fogColor.value.set(value);
+    // Update scene fog and then update shader uniforms if necessary
+    updateFog();
+    updateFadingLinesFogUniforms();
+}
+
+// --- NEW Function to update Fading Lines shader fog uniforms --- 
+export function updateFadingLinesFogUniforms(): void {
+    if (config.style === Styles.FADING_LINES && contourLinesGroup && contourLinesGroup.userData.sharedMaterial instanceof THREE.ShaderMaterial) {
+        const shaderMaterial = contourLinesGroup.userData.sharedMaterial;
+
+        // Update fog color uniform
+        if (shaderMaterial.uniforms.u_fogColor) {
+            shaderMaterial.uniforms.u_fogColor.value.set(config.backgroundColor);
+        }
+
+        // Update fog distance uniforms based on scene.fog state
+        if (scene.fog && config.fogIntensity > 0) {
+            // Cast scene.fog to THREE.Fog as updateFog ensures it is not FogExp2
+            const fog = scene.fog as THREE.Fog;
+            if (shaderMaterial.uniforms.u_fogNear) {
+                shaderMaterial.uniforms.u_fogNear.value = fog.near;
+            }
+            if (shaderMaterial.uniforms.u_fogFar) {
+                shaderMaterial.uniforms.u_fogFar.value = fog.far;
+            }
+        } else {
+            // Fog is off, set shader fog distances very far to disable effect
+            if (shaderMaterial.uniforms.u_fogNear) {
+                shaderMaterial.uniforms.u_fogNear.value = 1000000;
+            }
+            if (shaderMaterial.uniforms.u_fogFar) {
+                shaderMaterial.uniforms.u_fogFar.value = 1000001;
+            }
+        }
     }
 }
 

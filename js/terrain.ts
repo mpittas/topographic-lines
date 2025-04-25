@@ -149,16 +149,31 @@ export function generateContourLines(
             contourLinesGroup.userData.sharedMaterial = null;
         }
 
+        // Calculate fog distances based on config
+        let fogNear = 0, fogFar = 1000; // Default values
+        const intensity = config.fogIntensity;
+        if (intensity > 0) {
+            const minDistance = config.minFadeDistance;
+            const maxDistance = config.maxFadeDistance;
+            const range = maxDistance - minDistance;
+            fogNear = maxDistance - range * intensity;
+            // Adjust far plane calculation slightly for smoother fade endpoint
+            fogFar = maxDistance + range * (1 - intensity) * 1.2;
+        }
+
         // Define fade heights
         const minHeight = config.minTerrainHeightFactor * config.terrainMaxHeight;
         const maxHeight = config.terrainMaxHeight;
 
         const uniforms = {
             baseColor: { value: baseContourColor },
-            fogColor: { value: new THREE.Color(config.backgroundColor) },
+            u_fogColor: { value: new THREE.Color(config.backgroundColor) },
             minFadeHeight: { value: minHeight },
             maxFadeHeight: { value: maxHeight },
-            u_opacity: { value: lineOpacity }
+            u_opacity: { value: lineOpacity },
+            u_cameraPosition: { value: camera ? camera.position : new THREE.Vector3() },
+            u_fogNear: { value: fogNear },
+            u_fogFar: { value: fogFar }
         };
 
         if (!contourLinesGroup.userData.sharedMaterial) {
@@ -168,17 +183,20 @@ export function generateContourLines(
                 fragmentShader: lineFadeFragmentShader,
                 transparent: true,
                 linewidth: 2,
-                depthTest: true, // Keep standard depth test for fading lines
+                depthTest: true,
                 depthWrite: true,
             });
         } else {
             // Update uniforms
             const existingMaterial = contourLinesGroup.userData.sharedMaterial as THREE.ShaderMaterial;
             existingMaterial.uniforms.baseColor.value = baseContourColor;
-            existingMaterial.uniforms.fogColor.value.set(config.backgroundColor);
+            existingMaterial.uniforms.u_fogColor.value.set(config.backgroundColor);
             existingMaterial.uniforms.minFadeHeight.value = minHeight;
             existingMaterial.uniforms.maxFadeHeight.value = maxHeight;
             existingMaterial.uniforms.u_opacity.value = lineOpacity;
+            existingMaterial.uniforms.u_cameraPosition.value = camera ? camera.position : new THREE.Vector3();
+            existingMaterial.uniforms.u_fogNear.value = fogNear;
+            existingMaterial.uniforms.u_fogFar.value = fogFar;
             // existingMaterial.needsUpdate = true; // Not usually needed for uniform updates
         }
         contourMaterial = contourLinesGroup.userData.sharedMaterial as THREE.ShaderMaterial;

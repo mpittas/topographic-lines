@@ -67,7 +67,7 @@ export function updateFog(): void {
         }
     } else {
         const near = maxDistance - range * intensity;
-        const far = maxDistance + range * (1 - intensity) * 1.5;
+        const far = maxDistance + range * (1 - config.fogIntensity) * 1.2;
 
         if (scene.fog) {
             scene.fog.color.set(bgColor);
