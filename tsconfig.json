@@ -10,6 +10,5 @@
   },
   "include": [
     "js/**/*.ts",
-    "script.ts"
   ]
 }
