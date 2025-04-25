@@ -198,68 +198,11 @@ function animate(): void {
     }
 
     if (contourLinesGroup && sceneCamera) {
-        if (config.style === Styles.FADING_LINES &&
-            contourLinesGroup.userData.sharedMaterial instanceof THREE.ShaderMaterial) {
-            // No per-frame uniform updates needed for height-based fade unless colors/heights change
-            // const shaderMaterial = contourLinesGroup.userData.sharedMaterial as THREE.ShaderMaterial;
-            // shaderMaterial.uniforms.cameraPosition.value.copy(sceneCamera.position); // REMOVED
-            // UPDATE: Need to update camera position uniform for manual fog
-            const shaderMaterial = contourLinesGroup.userData.sharedMaterial as THREE.ShaderMaterial;
-            if (shaderMaterial.uniforms.u_cameraPosition) {
-                shaderMaterial.uniforms.u_cameraPosition.value.copy(sceneCamera.position);
-            }
-        } else if (config.style === Styles.LINES_ONLY &&
+        if (config.style === Styles.LINES_ONLY &&
                    contourLinesGroup.userData.sharedMaterial instanceof THREE.LineBasicMaterial &&
                    contourLinesGroup.userData.sharedMaterial.vertexColors) {
-            // --- REMOVED Per-frame color update/fog fade for LINES_ONLY ---
-            // Lines retain their generated vertex colors based on baseContourColor.
-            // If baseContourColor changes, updateVisualization handles regeneration.
-            /*
-             const cameraPosition = sceneCamera.position;
-             contourLinesGroup.children.forEach((line: THREE.Object3D) => {
-                 if (!((line as THREE.LineSegments).geometry) || !((line as THREE.LineSegments).geometry.attributes.position) || !((line as THREE.LineSegments).geometry.attributes.color)) return;
-                 line.visible = true;
-                 const geometry = (line as THREE.LineSegments).geometry;
-                 const positions = geometry.attributes.position.array as Float32Array;
-                 const colors = geometry.attributes.color.array as Float32Array;
-                 let colorsNeedUpdate = false;
- 
-                 const intensity = config.fogIntensity;
-                 let applyFade = false;
-                 let near = 0, far = 0, currentFadeRange = 1;
- 
-                 if (intensity > 0) {
-                     applyFade = true;
-                     const minDistance = config.minFadeDistance;
-                     const maxDistance = config.maxFadeDistance;
-                     const range = maxDistance - minDistance;
-                     near = maxDistance - range * intensity;
-                     far = maxDistance + range * (1 - intensity) * 1.5;
-                     currentFadeRange = Math.max(1.0, far - near);
-                 }
- 
-                 for (let i = 0; i < positions.length; i += 3) {
-                     tempVec3.set(positions[i], positions[i + 1], positions[i + 2]);
- 
-                     if (applyFade) {
-                         const distance = tempVec3.distanceTo(cameraPosition);
-                         const fadeFactor = THREE.MathUtils.smoothstep(distance, near, far);
-                         tempColor.copy(baseContourColor).lerp(fadeToBgColor, fadeFactor);
-                     } else {
-                         tempColor.copy(baseContourColor);
-                     }
- 
-                     const threshold = 0.005;
-                     if (Math.abs(colors[i] - tempColor.r) > threshold || Math.abs(colors[i + 1] - tempColor.g) > threshold || Math.abs(colors[i + 2] - tempColor.b) > threshold) {
-                         colors[i] = tempColor.r; colors[i + 1] = tempColor.g; colors[i + 2] = tempColor.b;
-                         colorsNeedUpdate = true;
-                     }
-                 }
-                 if (colorsNeedUpdate) geometry.attributes.color.needsUpdate = true;
-             });
-             */
             // Ensure lines are visible if style is LINES_ONLY
-             if (!contourLinesGroup.visible) contourLinesGroup.visible = true; // Should be handled by updateVisualization already
+             if (!contourLinesGroup.visible) contourLinesGroup.visible = true;
         }
     }
 
@@ -269,16 +212,12 @@ function animate(): void {
 }
 
 function handleContourColorChange(value: string): void {
-    // Update the color used for generating line vertex colors
     baseContourColor.set(value);
-
-    // Mesh color for FILLED_MOUNTAIN is handled in updateVisualization now.
-
-    // If using Fading Lines, update the baseColor uniform
-    if (contourLinesGroup && contourLinesGroup.userData.sharedMaterial instanceof THREE.ShaderMaterial && config.style === Styles.FADING_LINES) {
-        const shaderMaterial = contourLinesGroup.userData.sharedMaterial as THREE.ShaderMaterial;
+    // Update shader uniform if applicable
+    if (config.style === Styles.FADING_LINES && contourLinesGroup && contourLinesGroup.userData.sharedMaterial instanceof THREE.ShaderMaterial) {
+        const shaderMaterial = contourLinesGroup.userData.sharedMaterial;
         if (shaderMaterial.uniforms.baseColor) {
-            shaderMaterial.uniforms.baseColor.value.set(value);
+            shaderMaterial.uniforms.baseColor.value = baseContourColor;
         }
     }
 }
@@ -286,13 +225,11 @@ function handleContourColorChange(value: string): void {
 function handleBackgroundColorChange(value: string): void {
     fadeToBgColor.set(value);
     if (scene) scene.background = fadeToBgColor;
-
-    // Update scene fog and then update shader uniforms if necessary
-    updateFog();
-    updateFadingLinesFogUniforms();
+    updateFog(); // Update scene fog color
+    updateFadingLinesFogUniforms(); // Update shader fog color uniform
 }
 
-// --- NEW Function to update Fading Lines shader fog uniforms --- 
+// Updates relevant uniforms for the Fading Lines shader
 export function updateFadingLinesFogUniforms(): void {
     if (config.style === Styles.FADING_LINES && contourLinesGroup && contourLinesGroup.userData.sharedMaterial instanceof THREE.ShaderMaterial) {
         const shaderMaterial = contourLinesGroup.userData.sharedMaterial;
@@ -302,24 +239,14 @@ export function updateFadingLinesFogUniforms(): void {
             shaderMaterial.uniforms.u_fogColor.value.set(config.backgroundColor);
         }
 
-        // Update fog distance uniforms based on scene.fog state
-        if (scene.fog && config.fogIntensity > 0) {
-            // Cast scene.fog to THREE.Fog as updateFog ensures it is not FogExp2
-            const fog = scene.fog as THREE.Fog;
-            if (shaderMaterial.uniforms.u_fogNear) {
-                shaderMaterial.uniforms.u_fogNear.value = fog.near;
-            }
-            if (shaderMaterial.uniforms.u_fogFar) {
-                shaderMaterial.uniforms.u_fogFar.value = fog.far;
-            }
-        } else {
-            // Fog is off, set shader fog distances very far to disable effect
-            if (shaderMaterial.uniforms.u_fogNear) {
-                shaderMaterial.uniforms.u_fogNear.value = 1000000;
-            }
-            if (shaderMaterial.uniforms.u_fogFar) {
-                shaderMaterial.uniforms.u_fogFar.value = 1000001;
-            }
+        // Update edge fade intensity uniform
+        if (shaderMaterial.uniforms.u_edgeFadeIntensity) {
+            shaderMaterial.uniforms.u_edgeFadeIntensity.value = config.fogIntensity;
+        }
+
+        // Update terrain half size uniform (in case terrain size changes)
+        if (shaderMaterial.uniforms.u_terrainHalfSize) {
+            shaderMaterial.uniforms.u_terrainHalfSize.value = config.terrainSize / 2.0;
         }
     }
 }
