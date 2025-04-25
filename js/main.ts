@@ -1,12 +1,18 @@
 import * as THREE from 'three';
-import { config, baseConfig, randomRanges, updateDerivedConfig, baseContourColor as configBaseContourColor, fadeToBgColor as configFadeToBgColor } from './config.js';
-import { generateTerrain, generateContourLines, createTerrainBorder, randomizeTerrainSettings } from './terrain.js';
-import { initScene, updateFog, updateControls, disposeScene } from './scene.js';
-import { setupGUI, updateGUI } from './gui.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'; // Added import for OrbitControls
+import { config, baseConfig, randomRanges, updateDerivedConfig, baseContourColor as configBaseContourColor, fadeToBgColor as configFadeToBgColor } from './config'; // Changed import path to .ts
+import { generateTerrain, generateContourLines, createTerrainBorder, randomizeTerrainSettings } from './terrain'; // Changed import path to .ts
+import { initScene, updateFog, updateControls, disposeScene } from './scene'; // Changed import path to .ts
+import { setupGUI, updateGUI } from './gui'; // Changed import path to .ts
 
 // --- Global Variables (Module Scope) ---
-let scene, camera, renderer, controls;
-let terrainMesh, terrainBorder, contourLinesGroup;
+let scene: THREE.Scene;
+let camera: THREE.PerspectiveCamera;
+let renderer: THREE.WebGLRenderer;
+let controls: OrbitControls;
+let terrainMesh: THREE.Mesh | null;
+let terrainBorder: THREE.Line | null;
+let contourLinesGroup: THREE.Group;
 
 // --- Color Management ---
 // Use the exported variables from config.js but manage the THREE.Color instances here
@@ -14,7 +20,7 @@ let baseContourColor = new THREE.Color(config.contourColor);
 let fadeToBgColor = new THREE.Color(config.backgroundColor);
 
 // --- Initialization ---
-function init() {
+function init(): void {
     // Initialize Scene, Camera, Renderer, Controls
     const sceneElements = initScene(document.body); // Pass body as container
     scene = sceneElements.scene;
@@ -44,7 +50,7 @@ function init() {
 
 // --- Update Visualization ---
 // This function is called by GUI buttons/controls or initially
-function updateVisualization() {
+function updateVisualization(): void {
     console.log("Updating visualization...");
 
     // 1. Randomize Settings (modifies the config object)
@@ -56,14 +62,14 @@ function updateVisualization() {
 
     // 3. Regenerate Terrain Mesh
     terrainMesh = generateTerrain(); // Returns the mesh, stored in module scope
-    if (!terrainMesh.parent && scene) { // Add to scene if not already added
+    if (terrainMesh && !terrainMesh.parent && scene) { // Add to scene if not already added
        // scene.add(terrainMesh); // Usually not needed as it's invisible
     }
 
 
     // 4. Regenerate Contour Lines
     // Pass the necessary geometry and the *current* baseContourColor THREE.Color object
-    const newContourGroup = generateContourLines(terrainMesh.geometry, baseContourColor);
+    const newContourGroup = generateContourLines(terrainMesh!.geometry, baseContourColor);
     if (contourLinesGroup && contourLinesGroup.parent) {
         scene.remove(contourLinesGroup); // Remove old group
     }
@@ -89,7 +95,7 @@ function updateVisualization() {
 
 
 // --- Export Function ---
-function exportToPNG() {
+function exportToPNG(): void {
     if (!scene || !camera || !renderer) return;
     const originalBackground = scene.background;
     scene.background = null; // Set background to transparent for export
@@ -112,7 +118,7 @@ function exportToPNG() {
 const tempVec3 = new THREE.Vector3();
 const tempColor = new THREE.Color();
 
-function animate() {
+function animate(): void {
     requestAnimationFrame(animate);
 
     // Update controls if enabled
@@ -126,12 +132,12 @@ function animate() {
         // Use the dynamically updated fadeRange from config module (or recalculate here)
         const currentFadeRange = Math.max(1.0, config.maxFadeDistance - config.minFadeDistance);
 
-        contourLinesGroup.children.forEach(line => {
-            if (!line.geometry || !line.geometry.attributes.position || !line.geometry.attributes.color) return;
+        contourLinesGroup.children.forEach((line: THREE.Object3D) => {
+            if (!((line as THREE.LineSegments).geometry) || !((line as THREE.LineSegments).geometry.attributes.position) || !((line as THREE.LineSegments).geometry.attributes.color)) return;
             line.visible = true; // Ensure lines are visible
-            const geometry = line.geometry;
-            const positions = geometry.attributes.position.array;
-            const colors = geometry.attributes.color.array;
+            const geometry = (line as THREE.LineSegments).geometry;
+            const positions = geometry.attributes.position.array as Float32Array;
+            const colors = geometry.attributes.color.array as Float32Array;
             let colorsNeedUpdate = false;
 
             for (let i = 0; i < positions.length; i += 3) {
@@ -163,13 +169,13 @@ function animate() {
 }
 
 // --- Handle Color Changes from GUI ---
-function handleContourColorChange(value) {
+function handleContourColorChange(value: string): void {
     // Update the THREE.Color object used in the animation loop
     baseContourColor.set(value);
     // The animation loop will pick up this change and update vertex colors
 }
 
-function handleBackgroundColorChange(value) {
+function handleBackgroundColorChange(value: string): void {
     // Update the THREE.Color object used in the animation loop
     fadeToBgColor.set(value);
     // Update the scene background immediately

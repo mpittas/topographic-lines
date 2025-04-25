@@ -1,12 +1,21 @@
 import * as THREE from 'three'; // Needed for THREE.Color updates
-import { config, baseConfig } from './config.js';
-import { updateControls, updateFog } from './scene.js'; // Import scene-specific updates
+import { config, baseConfig } from './config'; // Changed import path to .ts
+import { updateControls, updateFog } from './scene'; // Changed import path to .ts
 
-let gui;
+// Declare dat globally for TypeScript
+declare const dat: any;
+
+let gui: dat.GUI;
 
 // --- Setup dat.GUI ---
 // Takes callbacks for actions that involve multiple modules (terrain generation, export)
-export function setupGUI(updateVisualizationCallback, exportCallback, getTerrainBorder, updateContourColorCallback, updateBackgroundColorCallback) {
+export function setupGUI(
+    updateVisualizationCallback: () => void,
+    exportCallback: () => void,
+    getTerrainBorder: () => THREE.Line | null,
+    updateContourColorCallback: (value: string) => void,
+    updateBackgroundColorCallback: (value: string) => void
+): dat.GUI {
     if (gui) gui.destroy(); // Destroy previous GUI if exists
     gui = new dat.GUI();
 
@@ -46,7 +55,7 @@ export function setupGUI(updateVisualizationCallback, exportCallback, getTerrain
 
     // Debug Folder
     const debugFolder = gui.addFolder('Debugging');
-    debugFolder.add(config, 'showTerrainBorder').name('Show Border').onChange((value) => {
+    debugFolder.add(config, 'showTerrainBorder').name('Show Border').onChange((value: boolean) => {
         const border = getTerrainBorder(); // Get the border object from main
         if (border) border.visible = value;
     });
@@ -64,14 +73,14 @@ export function setupGUI(updateVisualizationCallback, exportCallback, getTerrain
 }
 
 // Optional: Function to update GUI display if config is changed programmatically
-export function updateGUI() {
+export function updateGUI(): void {
     if (gui) {
         // Iterate over controllers and update their display value
         for (const folderName in gui.__folders) {
             const folder = gui.__folders[folderName];
-            folder.__controllers.forEach(controller => controller.updateDisplay());
+            folder.__controllers.forEach((controller: any) => controller.updateDisplay());
         }
         // Update top-level controllers if any
-         gui.__controllers.forEach(controller => controller.updateDisplay());
+         gui.__controllers.forEach((controller: any) => controller.updateDisplay());
     }
 }

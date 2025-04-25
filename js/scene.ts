@@ -1,11 +1,14 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { config } from './config.js';
+import { config } from './config'; // Changed import path to .ts
 
-let scene, camera, renderer, controls;
+let scene: THREE.Scene;
+let camera: THREE.PerspectiveCamera;
+let renderer: THREE.WebGLRenderer;
+let controls: OrbitControls;
 
 // --- Initialization ---
-export function initScene(container) {
+export function initScene(container: HTMLElement): { scene: THREE.Scene, camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer, controls: OrbitControls } {
     // Scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color(config.backgroundColor); // Initial background
@@ -44,7 +47,7 @@ export function initScene(container) {
 }
 
 // --- Fog Update ---
-export function updateFog() {
+export function updateFog(): void {
     if (!scene) return;
     // Clear existing fog first
     if (scene.fog) scene.fog = null;
@@ -53,7 +56,7 @@ export function updateFog() {
 }
 
 // --- Controls Update ---
-export function updateControls() {
+export function updateControls(): void {
     if (!controls) return;
     controls.enableRotate = config.enableRotate || config.enableVerticalRotate;
     controls.enableZoom = config.enableZoom;
@@ -78,7 +81,7 @@ export function updateControls() {
 }
 
 // --- Window Resize ---
-function onWindowResize() {
+function onWindowResize(): void {
     if (!camera || !renderer) return;
     const aspect = window.innerWidth / window.innerHeight;
     camera.aspect = aspect;
@@ -88,7 +91,7 @@ function onWindowResize() {
 }
 
 // --- Cleanup ---
-export function disposeScene() {
+export function disposeScene(): void {
     window.removeEventListener('resize', onWindowResize);
     if (controls) controls.dispose();
     if (renderer) renderer.dispose();
@@ -97,8 +100,8 @@ export function disposeScene() {
         // (Terrain and contours handle their own disposal)
     }
     // Clear references
-    scene = null;
-    camera = null;
-    renderer = null;
-    controls = null;
+    // scene = null; // Cannot assign null to type Scene
+    // camera = null; // Cannot assign null to type PerspectiveCamera
+    // renderer = null; // Cannot assign null to type WebGLRenderer
+    // controls = null; // Cannot assign null to type OrbitControls
 }

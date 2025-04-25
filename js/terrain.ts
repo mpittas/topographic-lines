@@ -1,19 +1,19 @@
 import * as THREE from 'three';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
-import { config, baseConfig, randomRanges } from './config.js';
+import { config, baseConfig, randomRanges } from './config'; // Changed import path to .ts
 
-let terrainMesh = null;
+let terrainMesh: THREE.Mesh | null = null;
 const contourLinesGroup = new THREE.Group();
-let terrainBorder = null;
+let terrainBorder: THREE.Line | null = null;
 
 // --- Terrain Generation ---
-export function generateTerrain() {
+export function generateTerrain(): THREE.Mesh {
     if (terrainMesh && terrainMesh.geometry) terrainMesh.geometry.dispose();
 
     const geometry = new THREE.PlaneGeometry(config.terrainSize, config.terrainSize, config.terrainSegments, config.terrainSegments);
     geometry.rotateX(-Math.PI / 2);
 
-    const vertices = geometry.attributes.position.array;
+    const vertices = geometry.attributes.position.array as Float32Array;
     const noise = new ImprovedNoise();
     const noiseSeed = Math.random() * 100;
 
@@ -62,30 +62,30 @@ export function generateTerrain() {
 }
 
 // --- Contour Line Generation ---
-export function generateContourLines(geometry, baseContourColor) {
+export function generateContourLines(geometry: THREE.BufferGeometry, baseContourColor: THREE.Color): THREE.Group {
     // Clear existing lines
     while (contourLinesGroup.children.length > 0) {
         const line = contourLinesGroup.children[0];
-        if (line.geometry) line.geometry.dispose();
+        if ((line as THREE.LineSegments).geometry) (line as THREE.LineSegments).geometry.dispose();
         // Material is shared, dispose separately
         contourLinesGroup.remove(line);
     }
     if (contourLinesGroup.userData.sharedMaterial) {
-        contourLinesGroup.userData.sharedMaterial.dispose();
+        (contourLinesGroup.userData.sharedMaterial as THREE.LineBasicMaterial).dispose();
         contourLinesGroup.userData.sharedMaterial = null;
     }
 
-    const vertices = geometry.attributes.position.array;
-    const index = geometry.index ? geometry.index.array : null;
-    if (!index) { console.error("Geometry has no index buffer."); return null; }; // Return null or empty group
+    const vertices = geometry.attributes.position.array as Float32Array;
+    const index = geometry.index ? geometry.index.array as Uint16Array | Uint32Array : null;
+    if (!index) { console.error("Geometry has no index buffer."); return new THREE.Group(); }; // Return null or empty group
 
     // Create one shared material for all lines
     const contourMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2, vertexColors: true });
     contourLinesGroup.userData.sharedMaterial = contourMaterial; // Store for disposal
 
-    const lines = {}; // Store points and colors per height level
+    const lines: { [key: number]: { points: number[], colors: number[] } } = {}; // Store points and colors per height level
 
-    function getIntersection(p1, p2, height) {
+    function getIntersection(p1: THREE.Vector3, p2: THREE.Vector3, height: number): THREE.Vector3 | null {
         const p1y = p1.y; const p2y = p2.y;
         if ((p1y < height && p2y < height) || (p1y >= height && p2y >= height)) return null;
         const t = (height - p1y) / (p2y - p1y);
@@ -111,7 +111,7 @@ export function generateContourLines(geometry, baseContourColor) {
              // Skip zero/negative height contours if interval is positive (avoids issues with flat bases at y=0)
              if (h <= 0 && currentInterval > 0) continue;
 
-            const intersections = [];
+            const intersections: THREE.Vector3[] = [];
             const edge12 = getIntersection(v1, v2, h), edge23 = getIntersection(v2, v3, h), edge31 = getIntersection(v3, v1, h);
             if (edge12) intersections.push(edge12); if (edge23) intersections.push(edge23); if (edge31) intersections.push(edge31);
 
@@ -145,10 +145,10 @@ export function generateContourLines(geometry, baseContourColor) {
 
 
 // --- Create Terrain Border ---
-export function createTerrainBorder(scene) {
+export function createTerrainBorder(scene: THREE.Scene): THREE.Line {
     if (terrainBorder) {
         if (terrainBorder.geometry) terrainBorder.geometry.dispose();
-        if (terrainBorder.material) terrainBorder.material.dispose();
+        if (terrainBorder.material) (terrainBorder.material as THREE.Material).dispose();
         scene.remove(terrainBorder); // Remove from the scene passed as argument
         terrainBorder = null;
     }
@@ -169,7 +169,7 @@ export function createTerrainBorder(scene) {
 }
 
 // --- Randomize Settings ---
-export function randomizeTerrainSettings() {
+export function randomizeTerrainSettings(): void {
     // Max Height: +/- heightRange% of base
     config.terrainMaxHeight = baseConfig.terrainMaxHeight *
         (1 + (Math.random() - 0.5) * randomRanges.heightRange / 50); // Convert % to factor
