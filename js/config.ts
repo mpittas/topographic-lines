@@ -1,19 +1,19 @@
 // --- Configuration Object ---
 // Store base values that randomization will modify slightly
 export const baseConfig = {
-    terrainMaxHeight: 130,
-    noiseScale: 100,
+    terrainMaxHeight: 200, // Adjusted base for 100-300 range
+    noiseScale: 110, // Adjusted base for 70-150 range
     minTerrainHeightFactor: 0.3,
-    contourInterval: 4,
+    contourInterval: 5, // Adjusted base for 2-8 range
 };
 
 // Randomization ranges (percentage for height/scale, absolute for height factor)
 export const randomRanges = {
-    heightRange: 30,    // +/- % for terrainMaxHeight
-    noiseRange: 15,     // +/- % for noiseScale
+    heightRange: 100,    // +/- % for terrainMaxHeight (100-300)
+    noiseRange: 36,     // +/- % for noiseScale (approx 70-150)
     minHeightRange: 0.05, // +/- absolute for minTerrainHeightFactor
-    intervalRange: 8,    // Max random interval (1 to N)
-    enableIntervalRandomization: false // Control if interval is randomized (set manually in GUI for now)
+    intervalRange: 7,    // Max random interval (1 to N) - will use 2-8 range directly
+    enableIntervalRandomization: true // Enable interval randomization
 };
 
 // Main configuration object, initialized with base values
@@ -29,17 +29,17 @@ export const config = {
 
     // Contours (Interval can be randomized or set manually)
     contourInterval: baseConfig.contourInterval,
-    contourColor: '#e66d6d',
+    contourColor: '#f09393',
     backgroundColor: '#f0efe6',
 
     // Fading (Fixed values)
     minFadeDistance: 200,
     maxFadeDistance: 640,
-fogIntensity: 0.65, // 0 = off, 1 = full
+    fogIntensity: 0.8, // 0 = off, 1 = full
 
     // Camera / Controls (Zoom limits fixed)
-    minZoomDistance: 280,
-    maxZoomDistance: 540,
+    minZoomDistance: 380,
+    maxZoomDistance: 740,
     enableZoom: true,
     enableRotate: true,
     enableVerticalRotate: false,

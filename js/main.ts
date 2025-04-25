@@ -51,13 +51,30 @@ function init(): void {
 
 // --- Update Visualization ---
 // This function is called by GUI buttons/controls or initially
-function updateVisualization(): void {
-    console.log("Updating visualization...");
+function updateVisualization(shouldRandomize: boolean = false): void { // Add parameter with default
+    console.log(`Updating visualization... (Randomize: ${shouldRandomize})`);
 
-    // 1. Randomize Settings (modifies the config object)
-    randomizeTerrainSettings();
+    if (shouldRandomize) {
+        // 1a. Randomize Settings (modifies the config object)
+        randomizeTerrainSettings();
 
-    // 2. Update derived config values based on potentially randomized config
+        // 1b. Update baseConfig with randomized values for GUI display
+        baseConfig.terrainMaxHeight = config.terrainMaxHeight;
+        baseConfig.noiseScale = config.noiseScale;
+        baseConfig.minTerrainHeightFactor = config.minTerrainHeightFactor;
+        baseConfig.contourInterval = config.contourInterval;
+        // Note: config.plateauVolume is randomized but the slider is bound to config directly, so no baseConfig update needed for it.
+    } else {
+        // 1c. Update config from baseConfig for sliders bound to baseConfig
+        // This ensures the slider's current value is used for generation
+        config.terrainMaxHeight = baseConfig.terrainMaxHeight;
+        config.noiseScale = baseConfig.noiseScale;
+        config.minTerrainHeightFactor = baseConfig.minTerrainHeightFactor;
+        // config.contourInterval and config.plateauVolume are bound directly to config, so no update needed here.
+    }
+
+
+    // 2. Update derived config values based on current config
     updateDerivedConfig(); // Update fadeRange etc.
     // Color updates are now handled by specific callbacks from GUI
 

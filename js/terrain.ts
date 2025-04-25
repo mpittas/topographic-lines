@@ -182,32 +182,44 @@ export function createTerrainBorder(scene: THREE.Scene): THREE.Line {
 // --- Randomize Settings ---
 export function randomizeTerrainSettings(): void {
     // Max Height: +/- heightRange% of base
-    config.terrainMaxHeight = baseConfig.terrainMaxHeight *
-        (1 + (Math.random() - 0.5) * randomRanges.heightRange / 50); // Convert % to factor
+    // Max Height: Random float between 20 and 300
+    config.terrainMaxHeight = Math.random() * (300 - 20) + 20;
 
-    // Noise Scale: +/- noiseRange% of base
-    config.noiseScale = baseConfig.noiseScale *
-        (1 + (Math.random() - 0.5) * randomRanges.noiseRange / 50); // Convert % to factor
+    // Noise Scale: Random float between 70 and 200
+    config.noiseScale = Math.random() * (200 - 70) + 70;
 
     // Min Height Factor: +/- minHeightRange absolute, clamped between 0 and 0.5
     config.minTerrainHeightFactor = Math.max(0, Math.min(0.5,
         baseConfig.minTerrainHeightFactor + (Math.random() - 0.5) * randomRanges.minHeightRange * 2));
 
-    // Contour Interval: Random integer between 1 and intervalRange if randomization enabled
+    // Plateau Volume: Random float between 0.0 and 1.0
+    config.plateauVolume = Math.random();
+
+    // Contour Interval: Random integer between 2 and 8 if randomization enabled
     if (randomRanges.enableIntervalRandomization) {
-        config.contourInterval = Math.floor(Math.random() * randomRanges.intervalRange) + 1;
+        config.contourInterval = Math.floor(Math.random() * 7) + 2; // Range 2 to 8
     }
     // else: keep the value set by the GUI
 
-    // Ensure values don't go below reasonable minimums
-    config.terrainMaxHeight = Math.max(10, config.terrainMaxHeight);
-    config.noiseScale = Math.max(10, config.noiseScale);
+    // Ensure values are within specified bounds
+    // Plateau Volume: Random float between 0.0 and 1.0
+    config.plateauVolume = Math.random();
+
+    // Contour Interval: Random integer between 2 and 8 if randomization enabled
+    if (randomRanges.enableIntervalRandomization) {
+        config.contourInterval = Math.floor(Math.random() * 7) + 2; // Range 2 to 8
+    }
+    // else: keep the value set by the GUI
+
+    // No need for explicit clamping here as the randomization now directly generates values within the desired ranges.
+    // The previous clamping logic is removed.
 
     console.log("Randomized Settings:", {
         maxH: config.terrainMaxHeight.toFixed(1) + ` (base ${baseConfig.terrainMaxHeight} ±${randomRanges.heightRange}%)`,
         noiseS: config.noiseScale.toFixed(1) + ` (base ${baseConfig.noiseScale} ±${randomRanges.noiseRange}%)`,
         minHF: config.minTerrainHeightFactor.toFixed(2) + ` (base ${baseConfig.minTerrainHeightFactor} ±${randomRanges.minHeightRange})`,
-        interval: config.contourInterval + (randomRanges.enableIntervalRandomization ? ` (random 1-${randomRanges.intervalRange})` : ' (manual)')
+        plateauV: config.plateauVolume.toFixed(2),
+        interval: config.contourInterval + (randomRanges.enableIntervalRandomization ? ` (random 2-8)` : ' (manual)')
     });
 
     // Note: updateDerivedConfig() might be needed if randomization affects derived values directly

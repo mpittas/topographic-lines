@@ -10,7 +10,7 @@ let gui: dat.GUI;
 // --- Setup dat.GUI ---
 // Takes callbacks for actions that involve multiple modules (terrain generation, export)
 export function setupGUI(
-    updateVisualizationCallback: () => void,
+    updateVisualizationCallback: (shouldRandomize?: boolean) => void, // Update type definition
     exportCallback: () => void,
     getTerrainBorder: () => THREE.Line | null,
     updateContourColorCallback: (value: string) => void,
@@ -27,20 +27,20 @@ export function setupGUI(
     terrainFolder.add(baseConfig, 'terrainMaxHeight', 20, 300, 5).name('Height')
         .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; }) // Hide on drag
         .onFinishChange(() => {
-            updateVisualizationCallback();
+            updateVisualizationCallback(false); // Don't randomize on slider change
             if (contourLinesGroup) contourLinesGroup.visible = true; // Show on finish
         });
     terrainFolder.add(baseConfig, 'noiseScale', 70, 200, 10).name('Feature Size')
         .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; }) // Hide on drag
         .onFinishChange(() => {
-            updateVisualizationCallback();
+            updateVisualizationCallback(false); // Don't randomize on slider change
             if (contourLinesGroup) contourLinesGroup.visible = true; // Show on finish
         });
     // Add Plateau Volume slider
     terrainFolder.add(config, 'plateauVolume', 0.0, 1.0, 0.01).name('Plateau Volume')
         .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; }) // Hide on drag
         .onFinishChange(() => {
-            updateVisualizationCallback();
+            updateVisualizationCallback(false); // Don't randomize on slider change
             if (contourLinesGroup) contourLinesGroup.visible = true; // Show on finish
         });
     terrainFolder.open();
@@ -50,7 +50,7 @@ export function setupGUI(
     contoursFolder.add(config, 'contourInterval', 1, 50, 1).name('Interval')
         .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; }) // Hide on drag
         .onFinishChange(() => {
-            updateVisualizationCallback();
+            updateVisualizationCallback(false); // Don't randomize on slider change
             if (contourLinesGroup) contourLinesGroup.visible = true; // Show on finish
         });
     contoursFolder.addColor(config, 'contourColor').name('Line Color').onFinishChange(updateContourColorCallback); // Use onFinishChange
@@ -91,7 +91,7 @@ export function setupGUI(
 
     // Generate New Terrain Button
     // Pass the main update function directly
-    gui.add({ generate: updateVisualizationCallback }, 'generate').name('Generate New Terrain');
+    gui.add({ generate: () => updateVisualizationCallback(true) }, 'generate').name('Generate New Terrain'); // Randomize on button click
 
     // Export Button
     // Pass the main export function directly
