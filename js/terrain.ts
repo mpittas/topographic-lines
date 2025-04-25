@@ -153,12 +153,13 @@ export function generateContourLines(
         let fogNear = 0, fogFar = 1000; // Default values
         const intensity = config.fogIntensity;
         if (intensity > 0) {
+            const adjustedIntensity = intensity * intensity; // Square the intensity
             const minDistance = config.minFadeDistance;
             const maxDistance = config.maxFadeDistance;
             const range = maxDistance - minDistance;
-            fogNear = maxDistance - range * intensity;
+            fogNear = maxDistance - range * adjustedIntensity;
             // Adjust far plane calculation slightly for smoother fade endpoint
-            fogFar = maxDistance + range * (1 - intensity) * 1.2;
+            fogFar = maxDistance + range * (1 - adjustedIntensity) * 1.2;
         }
 
         // Define fade heights

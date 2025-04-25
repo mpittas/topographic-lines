@@ -66,8 +66,9 @@ export function updateFog(): void {
             scene.fog = new THREE.Fog(bgColor, maxDistance * 100, maxDistance * 101);
         }
     } else {
-        const near = maxDistance - range * intensity;
-        const far = maxDistance + range * (1 - config.fogIntensity) * 1.2;
+        const adjustedIntensity = intensity * intensity;
+        const near = maxDistance - range * adjustedIntensity;
+        const far = maxDistance + range * (1 - adjustedIntensity) * 1.2;
 
         if (scene.fog) {
             scene.fog.color.set(bgColor);
