@@ -21,7 +21,7 @@ export const randomRanges = {
 export const config = {
     // Terrain Shape (These will be slightly randomized on generation)
     terrainSize: 1000,
-    terrainSegments: 500,
+    terrainSegments: 200, // Reduced for performance
     terrainMaxHeight: baseConfig.terrainMaxHeight,
     noiseScale: baseConfig.noiseScale,
     minTerrainHeightFactor: baseConfig.minTerrainHeightFactor,

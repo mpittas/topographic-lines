@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
-import { config, baseConfig, randomRanges } from './config'; // Changed import path to .ts
+import { config, baseConfig, randomRanges } from './config';
 
 let terrainMesh: THREE.Mesh | null = null;
 const contourLinesGroup = new THREE.Group();

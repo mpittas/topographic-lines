@@ -14,24 +14,47 @@ export function setupGUI(
     exportCallback: () => void,
     getTerrainBorder: () => THREE.Line | null,
     updateContourColorCallback: (value: string) => void,
-    updateBackgroundColorCallback: (value: string) => void
-): dat.GUI {
+    updateBackgroundColorCallback: (value: string) => void, // Add comma here
+    contourLinesGroup: THREE.Group // Add this parameter
+): dat.GUI { // Add contourLinesGroup parameter
     if (gui) gui.destroy(); // Destroy previous GUI if exists
     gui = new dat.GUI();
 
+    // Add onChange handlers to hide contours during drag
+
     // Terrain Folder - Controls BASE values for randomization center point
     const terrainFolder = gui.addFolder('Terrain Shape');
-    terrainFolder.add(baseConfig, 'terrainMaxHeight', 10, 300, 5).name('Base Max Height').onFinishChange(updateVisualizationCallback);
-    terrainFolder.add(baseConfig, 'noiseScale', 10, 500, 10).name('Base Feature Scale').onFinishChange(updateVisualizationCallback);
-    terrainFolder.add(baseConfig, 'minTerrainHeightFactor', 0, 0.5, 0.01).name('Base Min Height Factor').onFinishChange(updateVisualizationCallback);
+    terrainFolder.add(baseConfig, 'terrainMaxHeight', 10, 300, 5).name('Base Max Height')
+        .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; }) // Hide on drag
+        .onFinishChange(() => {
+            updateVisualizationCallback();
+            if (contourLinesGroup) contourLinesGroup.visible = true; // Show on finish
+        });
+    terrainFolder.add(baseConfig, 'noiseScale', 10, 500, 10).name('Base Feature Scale')
+        .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; }) // Hide on drag
+        .onFinishChange(() => {
+            updateVisualizationCallback();
+            if (contourLinesGroup) contourLinesGroup.visible = true; // Show on finish
+        });
+    terrainFolder.add(baseConfig, 'minTerrainHeightFactor', 0, 0.5, 0.01).name('Base Min Height Factor')
+        .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; }) // Hide on drag
+        .onFinishChange(() => {
+            updateVisualizationCallback();
+            if (contourLinesGroup) contourLinesGroup.visible = true; // Show on finish
+        });
     terrainFolder.open();
 
     // Contours Folder
     const contoursFolder = gui.addFolder('Contours');
     // Use onFinishChange for interval to avoid regenerating on every drag increment
-    contoursFolder.add(config, 'contourInterval', 1, 50, 1).name('Interval').onFinishChange(updateVisualizationCallback);
-    contoursFolder.addColor(config, 'contourColor').name('Line Color').onChange(updateContourColorCallback);
-    contoursFolder.addColor(config, 'backgroundColor').name('Background').onChange(updateBackgroundColorCallback);
+    contoursFolder.add(config, 'contourInterval', 1, 50, 1).name('Interval')
+        .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; }) // Hide on drag
+        .onFinishChange(() => {
+            updateVisualizationCallback();
+            if (contourLinesGroup) contourLinesGroup.visible = true; // Show on finish
+        });
+    contoursFolder.addColor(config, 'contourColor').name('Line Color').onFinishChange(updateContourColorCallback); // Use onFinishChange
+    contoursFolder.addColor(config, 'backgroundColor').name('Background').onFinishChange(updateBackgroundColorCallback); // Use onFinishChange
     contoursFolder.open();
 
     // --- Fading Folder REMOVED ---

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { config } from './config'; // Changed import path to .ts
+import { config } from './config'; 
 
 let scene: THREE.Scene;
 let camera: THREE.PerspectiveCamera;

@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'; // Added import for OrbitControls
-import { config, baseConfig, randomRanges, updateDerivedConfig, baseContourColor as configBaseContourColor, fadeToBgColor as configFadeToBgColor } from './config'; // Changed import path to .ts
-import { generateTerrain, generateContourLines, createTerrainBorder, randomizeTerrainSettings } from './terrain'; // Changed import path to .ts
-import { initScene, updateFog, updateControls, disposeScene } from './scene'; // Changed import path to .ts
-import { setupGUI, updateGUI } from './gui'; // Changed import path to .ts
+import { config, baseConfig, randomRanges, updateDerivedConfig, baseContourColor as configBaseContourColor, fadeToBgColor as configFadeToBgColor } from './config';
+import { generateTerrain, generateContourLines, createTerrainBorder, randomizeTerrainSettings } from './terrain';
+import { initScene, updateFog, updateControls, disposeScene } from './scene';
+import { setupGUI, updateGUI } from './gui';
 
 // --- Global Variables (Module Scope) ---
 let scene: THREE.Scene;
@@ -41,7 +41,8 @@ function init(): void {
         exportToPNG,         // Callback for exporting
         () => terrainBorder,  // Getter function for the terrain border object
         handleContourColorChange, // Callback for contour color changes
-        handleBackgroundColorChange // Callback for background color changes
+        handleBackgroundColorChange, // Callback for background color changes
+        contourLinesGroup // Pass the contourLinesGroup
     );
 
     // Start Animation Loop
