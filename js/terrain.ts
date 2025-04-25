@@ -21,6 +21,11 @@ export function generateTerrain(): THREE.Mesh {
     const currentMaxHeight = config.terrainMaxHeight;
     const currentNoiseScale = config.noiseScale;
     const currentMinHeightFactor = config.minTerrainHeightFactor;
+    const currentPlateauVolume = config.plateauVolume; // Get plateau volume
+
+    // Calculate the height above which flattening occurs
+    // Ranges from currentMaxHeight (vol=0) down to 0.5 * currentMaxHeight (vol=1)
+    const plateauCutoffHeight = currentMaxHeight * (1 - currentPlateauVolume * 0.5);
 
     for (let i = 0, j = 0; i < vertices.length; i++, j += 3) {
         const x = vertices[j], z = vertices[j + 2];
@@ -40,9 +45,15 @@ export function generateTerrain(): THREE.Mesh {
         const slopeFactor = 1 + Math.abs(noise1 - noise2) * 0.1;  // Reduced to 0.1
         // Very high minimum elevation
         // const minHeight = currentMinHeightFactor * currentMaxHeight * 1.7; // This wasn't used, removed
-        const finalHeight = expNoise * currentMaxHeight * slopeFactor;
+        let finalHeight = expNoise * currentMaxHeight * slopeFactor; // Use let to allow modification
 
-        // Apply minimum height factor
+        // Apply plateau effect
+        // If volume > 0 and height is above the cutoff, interpolate towards the cutoff
+        if (currentPlateauVolume > 0 && finalHeight > plateauCutoffHeight) {
+             finalHeight = plateauCutoffHeight + (finalHeight - plateauCutoffHeight) * (1 - currentPlateauVolume);
+        }
+
+        // Apply minimum height factor AFTER plateau effect
         vertices[j + 1] = Math.max(
             currentMinHeightFactor * currentMaxHeight,
             finalHeight

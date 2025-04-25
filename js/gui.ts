@@ -36,6 +36,13 @@ export function setupGUI(
             updateVisualizationCallback();
             if (contourLinesGroup) contourLinesGroup.visible = true; // Show on finish
         });
+    // Add Plateau Volume slider
+    terrainFolder.add(config, 'plateauVolume', 0.0, 1.0, 0.01).name('Plateau Volume')
+        .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; }) // Hide on drag
+        .onFinishChange(() => {
+            updateVisualizationCallback();
+            if (contourLinesGroup) contourLinesGroup.visible = true; // Show on finish
+        });
     terrainFolder.open();
 // Contours Folder
     const contoursFolder = gui.addFolder('Contours');

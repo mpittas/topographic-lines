@@ -25,6 +25,7 @@ export const config = {
     terrainMaxHeight: baseConfig.terrainMaxHeight,
     noiseScale: baseConfig.noiseScale,
     minTerrainHeightFactor: baseConfig.minTerrainHeightFactor,
+    plateauVolume: 0.0, // 0.0 = no plateau, 1.0 = max plateau
 
     // Contours (Interval can be randomized or set manually)
     contourInterval: baseConfig.contourInterval,
