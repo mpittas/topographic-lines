@@ -49,10 +49,41 @@ export function initScene(container: HTMLElement): { scene: THREE.Scene, camera:
 // --- Fog Update ---
 export function updateFog(): void {
     if (!scene) return;
-    // Clear existing fog first
-    if (scene.fog) scene.fog = null;
-    // Use the fixed config values for fog distance, but current background color
-    scene.fog = new THREE.Fog(config.backgroundColor, config.maxFadeDistance * 0.8, config.maxFadeDistance * 1.4);
+
+    const intensity = config.fogIntensity;
+    const bgColor = config.backgroundColor;
+    const minDistance = config.minFadeDistance;
+    const maxDistance = config.maxFadeDistance;
+    const range = maxDistance - minDistance;
+
+    if (intensity <= 0) {
+        // Disable fog by setting distances very far
+        if (scene.fog) {
+             // Update existing fog if possible, otherwise create new
+            scene.fog.color.set(bgColor);
+            scene.fog.near = maxDistance * 100; // Effectively disable
+            scene.fog.far = maxDistance * 101;
+        } else {
+            scene.fog = new THREE.Fog(bgColor, maxDistance * 100, maxDistance * 101);
+        }
+    } else {
+        // Calculate interpolated distances based on intensity
+        // Near distance moves from maxDistance towards minDistance as intensity increases
+        const near = maxDistance - range * intensity;
+        // Far distance starts far and moves towards maxDistance as intensity increases
+        // Let's make it extend further out when intensity is low
+        const far = maxDistance + range * (1 - intensity) * 1.5; // Adjust multiplier as needed
+
+        if (scene.fog) {
+            // Update existing fog
+            scene.fog.color.set(bgColor);
+            scene.fog.near = near;
+            scene.fog.far = far;
+        } else {
+            // Create new fog
+            scene.fog = new THREE.Fog(bgColor, near, far);
+        }
+    }
 }
 
 // --- Controls Update ---

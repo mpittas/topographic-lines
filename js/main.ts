@@ -130,9 +130,6 @@ function animate(): void {
     // Update contour line colors based on distance (fading)
     if (contourLinesGroup && camera) {
         const cameraPosition = camera.position;
-        // Use the dynamically updated fadeRange from config module (or recalculate here)
-        const currentFadeRange = Math.max(1.0, config.maxFadeDistance - config.minFadeDistance);
-
         contourLinesGroup.children.forEach((line: THREE.Object3D) => {
             if (!((line as THREE.LineSegments).geometry) || !((line as THREE.LineSegments).geometry.attributes.position) || !((line as THREE.LineSegments).geometry.attributes.color)) return;
             line.visible = true; // Ensure lines are visible
@@ -141,15 +138,34 @@ function animate(): void {
             const colors = geometry.attributes.color.array as Float32Array;
             let colorsNeedUpdate = false;
 
+            // Calculate fade parameters based on fog intensity
+            const intensity = config.fogIntensity;
+            let applyFade = false;
+            let near = 0, far = 0, currentFadeRange = 1; // Default range to 1 to avoid division by zero
+
+            if (intensity > 0) {
+                applyFade = true;
+                const minDistance = config.minFadeDistance;
+                const maxDistance = config.maxFadeDistance;
+                const range = maxDistance - minDistance;
+                near = maxDistance - range * intensity;
+                far = maxDistance + range * (1 - intensity) * 1.5; // Same logic as in scene.ts
+                currentFadeRange = Math.max(1.0, far - near); // Ensure range is at least 1
+            }
+
             for (let i = 0; i < positions.length; i += 3) {
                 tempVec3.set(positions[i], positions[i + 1], positions[i + 2]);
-                const distance = tempVec3.distanceTo(cameraPosition);
 
-                // Calculate fade factor using current config values
-                const fadeFactor = Math.min(Math.max((distance - config.minFadeDistance) / currentFadeRange, 0), 1);
-
-                // Lerp between the *current* baseContourColor and fadeToBgColor
-                tempColor.copy(baseContourColor).lerp(fadeToBgColor, fadeFactor);
+                if (applyFade) {
+                    const distance = tempVec3.distanceTo(cameraPosition);
+                    // Calculate fade factor using new near/far distances
+                    const fadeFactor = Math.min(Math.max((distance - near) / currentFadeRange, 0), 1);
+                    // Lerp between the *current* baseContourColor and fadeToBgColor
+                    tempColor.copy(baseContourColor).lerp(fadeToBgColor, fadeFactor);
+                } else {
+                    // No fade, use base color directly
+                    tempColor.copy(baseContourColor);
+                }
 
                 // Check if color update is needed (with a small threshold)
                 const threshold = 0.005;

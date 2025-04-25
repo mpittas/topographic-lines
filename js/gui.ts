@@ -24,13 +24,13 @@ export function setupGUI(
 
 // Terrain Folder - Controls BASE values for randomization center point
     const terrainFolder = gui.addFolder('Terrain Shape');
-    terrainFolder.add(baseConfig, 'terrainMaxHeight', 10, 300, 5).name('Height')
+    terrainFolder.add(baseConfig, 'terrainMaxHeight', 20, 300, 5).name('Height')
         .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; }) // Hide on drag
         .onFinishChange(() => {
             updateVisualizationCallback();
             if (contourLinesGroup) contourLinesGroup.visible = true; // Show on finish
         });
-    terrainFolder.add(baseConfig, 'noiseScale', 10, 500, 10).name('Feature Size')
+    terrainFolder.add(baseConfig, 'noiseScale', 70, 200, 10).name('Feature Size')
         .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; }) // Hide on drag
         .onFinishChange(() => {
             updateVisualizationCallback();
@@ -49,6 +49,11 @@ export function setupGUI(
     contoursFolder.addColor(config, 'contourColor').name('Line Color').onFinishChange(updateContourColorCallback); // Use onFinishChange
     contoursFolder.addColor(config, 'backgroundColor').name('Background').onFinishChange(updateBackgroundColorCallback); // Use onFinishChange
     contoursFolder.open();
+// Fog Folder
+    const fogFolder = gui.addFolder('Fog');
+    fogFolder.add(config, 'fogIntensity', 0, 1, 0.01).name('Intensity')
+        .onFinishChange(updateFog); // Call updateFog when slider changes
+    fogFolder.open();
 
     // --- Fading Folder REMOVED ---
 

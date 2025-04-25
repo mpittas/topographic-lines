@@ -28,12 +28,13 @@ export const config = {
 
     // Contours (Interval can be randomized or set manually)
     contourInterval: baseConfig.contourInterval,
-    contourColor: '#d95f20',
+    contourColor: '#e66d6d',
     backgroundColor: '#f0efe6',
 
     // Fading (Fixed values)
     minFadeDistance: 200,
     maxFadeDistance: 640,
+fogIntensity: 0.65, // 0 = off, 1 = full
 
     // Camera / Controls (Zoom limits fixed)
     minZoomDistance: 280,
