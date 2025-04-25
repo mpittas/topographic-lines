@@ -1,3 +1,4 @@
+// Base terrain generation parameters that can be randomized
 export const baseConfig = {
     terrainMaxHeight: 200,
     noiseScale: 110,
@@ -13,6 +14,7 @@ export const randomRanges = {
     enableIntervalRandomization: true
 };
 
+// Main scene configuration with derived/visual settings
 export const config = {
     terrainSize: 1000,
     terrainSegments: 200,
@@ -30,7 +32,7 @@ export const config = {
     fogIntensity: 0.8,
 
     minZoomDistance: 380,
-    maxZoomDistance: 740,
+    maxZoomDistance: 540,
     enableZoom: true,
     enableRotate: true,
     enableVerticalRotate: false,
@@ -44,6 +46,7 @@ export let fadeRange = config.maxFadeDistance - config.minFadeDistance;
 export let baseContourColor = null;
 export let fadeToBgColor = null;
 
+// Updates computed values that depend on config parameters
 export function updateDerivedConfig() {
     fadeRange = config.maxFadeDistance - config.minFadeDistance;
 }

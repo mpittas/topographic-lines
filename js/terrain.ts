@@ -6,6 +6,7 @@ let terrainMesh: THREE.Mesh | null = null;
 const contourLinesGroup = new THREE.Group();
 let terrainBorder: THREE.Line | null = null;
 
+// Generates terrain mesh using Perlin noise with configurable parameters
 export function generateTerrain(): THREE.Mesh {
     const geometry = new THREE.PlaneGeometry(config.terrainSize, config.terrainSize, config.terrainSegments, config.terrainSegments);
     geometry.rotateX(-Math.PI / 2);
@@ -29,6 +30,7 @@ export function generateTerrain(): THREE.Mesh {
             z / (currentNoiseScale * 1.2),
             noiseSeed + 100
         );
+        // Combine two noise layers for more natural terrain variation
         const combinedNoise = (noise1 * 0.97) + (noise2 * 0.03);
         const expNoise = (combinedNoise + 1) / 2;
         const slopeFactor = 1 + Math.abs(noise1 - noise2) * 0.1;
@@ -55,6 +57,7 @@ export function generateTerrain(): THREE.Mesh {
     return terrainMesh;
 }
 
+// Generates contour lines by finding height intersections with terrain geometry
 export function generateContourLines(geometry: THREE.BufferGeometry, baseContourColor: THREE.Color): THREE.Group {
     while (contourLinesGroup.children.length > 0) {
         const line = contourLinesGroup.children[0];
@@ -128,6 +131,7 @@ export function generateContourLines(geometry: THREE.BufferGeometry, baseContour
     return contourLinesGroup;
 }
 
+// Creates a dashed border around the terrain perimeter
 export function createTerrainBorder(scene: THREE.Scene): THREE.Line {
     if (terrainBorder) {
         if (terrainBorder.geometry) terrainBorder.geometry.dispose();

@@ -7,6 +7,7 @@ let camera: THREE.PerspectiveCamera;
 let renderer: THREE.WebGLRenderer;
 let controls: OrbitControls;
 
+// Initializes Three.js scene with camera, renderer and orbit controls
 export function initScene(container: HTMLElement): { scene: THREE.Scene, camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer, controls: OrbitControls } {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(config.backgroundColor);
@@ -14,6 +15,7 @@ export function initScene(container: HTMLElement): { scene: THREE.Scene, camera:
 
     const aspect = window.innerWidth / window.innerHeight;
     camera = new THREE.PerspectiveCamera(65, aspect, 1, config.terrainSize * 2.5);
+    // Position camera at midpoint between min/max zoom distances
     const initialRadius = (config.minZoomDistance + config.maxZoomDistance) / 2;
     camera.position.set(
         0,
@@ -40,6 +42,7 @@ export function initScene(container: HTMLElement): { scene: THREE.Scene, camera:
     return { scene, camera, renderer, controls };
 }
 
+// Updates scene fog based on intensity and distance config
 export function updateFog(): void {
     if (!scene) return;
 
@@ -81,6 +84,7 @@ export function updateFog(): void {
     }
 }
 
+// Configures orbit controls based on current settings
 export function updateControls(): void {
     if (!controls) return;
     controls.enableRotate = config.enableRotate || config.enableVerticalRotate;

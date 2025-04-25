@@ -6,6 +6,7 @@ declare const dat: any;
 
 let gui: dat.GUI;
 
+// Creates dat.GUI interface with controls for terrain, camera and visualization
 export function setupGUI(
     updateVisualizationCallback: (shouldRandomize?: boolean) => void,
     exportCallback: () => void,
@@ -17,6 +18,7 @@ export function setupGUI(
     if (gui) gui.destroy();
     gui = new dat.GUI();
 
+    // Controls for terrain generation parameters
     const terrainFolder = gui.addFolder('Terrain Shape');
     terrainFolder.add(baseConfig, 'terrainMaxHeight', 20, 300, 5).name('Height')
         .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; })
@@ -52,6 +54,7 @@ export function setupGUI(
         .onFinishChange(updateFog);
     fogFolder.open();
 
+    // Controls for camera behavior and movement
     const cameraFolder = gui.addFolder('Camera Controls');
     cameraFolder.add(config, 'enableZoom').name('Enable Zoom').onChange(updateControls);
     cameraFolder.add(config, 'enableRotate').name('Enable Horiz Rotate').onChange(updateControls);
@@ -78,6 +81,7 @@ export function setupGUI(
     return gui;
 }
 
+// Refreshes all GUI controls to reflect current state
 export function updateGUI(): void {
     if (gui) {
         for (const folderName in gui.__folders) {

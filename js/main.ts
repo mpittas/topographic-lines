@@ -16,6 +16,7 @@ let contourLinesGroup: THREE.Group;
 let baseContourColor = new THREE.Color(config.contourColor);
 let fadeToBgColor = new THREE.Color(config.backgroundColor);
 
+// Initializes Three.js scene, terrain and GUI controls
 function init(): void {
     const sceneElements = initScene(document.body);
     scene = sceneElements.scene;
@@ -40,6 +41,7 @@ function init(): void {
     animate();
 }
 
+// Regenerates terrain and updates all visual elements
 function updateVisualization(shouldRandomize: boolean = false): void {
     console.log(`Updating visualization... (Randomize: ${shouldRandomize})`);
 
@@ -81,6 +83,7 @@ function updateVisualization(shouldRandomize: boolean = false): void {
     console.log("Update complete.");
 }
 
+// Exports current view to PNG with transparent background
 function exportToPNG(): void {
     if (!scene || !camera || !renderer) return;
     const originalBackground = scene.background;
@@ -101,6 +104,7 @@ function exportToPNG(): void {
 const tempVec3 = new THREE.Vector3();
 const tempColor = new THREE.Color();
 
+// Main animation loop with distance-based fog effects on contour lines
 function animate(): void {
     requestAnimationFrame(animate);
 
