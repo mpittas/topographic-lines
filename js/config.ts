@@ -45,6 +45,7 @@ export const config = {
     enableRotate: true,
     enableVerticalRotate: false,
     fixedVerticalAngle: Math.PI / 3,
+    cameraMinPitchAngle: 0.2,   // Minimum angle above horizon (radians)
 
     showTerrainBorder: false,
     style: Styles.FADING_LINES // Default style

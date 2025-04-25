@@ -19,8 +19,8 @@ export function initScene(container: HTMLElement): { scene: THREE.Scene, camera:
     const initialRadius = (config.minZoomDistance + config.maxZoomDistance) / 2;
     camera.position.set(
         0,
-        initialRadius * Math.cos(config.fixedVerticalAngle),
-        initialRadius * Math.sin(config.fixedVerticalAngle)
+        initialRadius * Math.cos(Math.PI / 3),
+        initialRadius * Math.sin(Math.PI / 3)
     );
     camera.lookAt(0, 0, 0);
 
@@ -87,20 +87,15 @@ export function updateFog(): void {
 // Configures orbit controls based on current settings
 export function updateControls(): void {
     if (!controls) return;
-    controls.enableRotate = config.enableRotate || config.enableVerticalRotate;
+    controls.enableRotate = config.enableRotate;
     controls.enableZoom = config.enableZoom;
     controls.enablePan = false;
 
     controls.minDistance = config.minZoomDistance;
     controls.maxDistance = config.maxZoomDistance;
 
-    if (config.enableVerticalRotate) {
-        controls.minPolarAngle = 0.1;
-        controls.maxPolarAngle = Math.PI - 0.1;
-    } else {
-        controls.minPolarAngle = config.fixedVerticalAngle;
-        controls.maxPolarAngle = config.fixedVerticalAngle;
-    }
+    controls.minPolarAngle = 0.5;
+    controls.maxPolarAngle = Math.PI / 2.25 - config.cameraMinPitchAngle;
 
     controls.target.set(0, 0, 0);
     controls.update();

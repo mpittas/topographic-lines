@@ -105,19 +105,10 @@ export function setupGUI(
         });
     fogFolder.open();
 
-    // Controls for camera behavior and movement
-    const cameraFolder = gui.addFolder('Camera Controls');
+    // --- Camera Controls Folder ---
+    const cameraFolder = gui.addFolder('Camera');
     cameraFolder.add(config, 'enableZoom').name('Enable Zoom').onChange(updateControls);
-    cameraFolder.add(config, 'enableRotate').name('Enable Horiz Rotate').onChange(updateControls);
-    cameraFolder.add(config, 'enableVerticalRotate').name('Enable Vert Rotate').onChange(updateControls);
-    cameraFolder.add(config, 'fixedVerticalAngle', Math.PI / 5, Math.PI / 3, 0.01)
-        .name('Vertical Angle')
-        .listen()
-        .onChange(() => {
-            if (!config.enableVerticalRotate) {
-                updateControls();
-            }
-        });
+    cameraFolder.add(config, 'enableRotate').name('Enable Rotation').onChange(updateControls);
 
     const debugFolder = gui.addFolder('Debugging');
     debugFolder.add(config, 'showTerrainBorder').name('Show Border').onChange((value: boolean) => {
