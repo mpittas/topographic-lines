@@ -161,7 +161,9 @@ export function generateContourLines(
             maxFadeHeight: { value: maxHeight },
             u_opacity: { value: lineOpacity },
             u_edgeFadeIntensity: { value: config.fogIntensity }, // Use fogIntensity for edge fade
-            u_terrainHalfSize: { value: config.terrainSize / 2.0 }
+            u_terrainHalfSize: { value: config.terrainSize / 2.0 },
+            u_hoverPoint: { value: new THREE.Vector3(0, -9999, 0) }, // Add hover point uniform
+            u_time: { value: 0.0 } // Add time uniform
         };
 
         if (!contourLinesGroup.userData.sharedMaterial) {
@@ -184,6 +186,7 @@ export function generateContourLines(
             existingMaterial.uniforms.u_opacity.value = lineOpacity;
             existingMaterial.uniforms.u_edgeFadeIntensity.value = config.fogIntensity;
             existingMaterial.uniforms.u_terrainHalfSize.value = config.terrainSize / 2.0;
+            // u_hoverPoint and u_time are updated dynamically in animate loop, no need to update here
         }
         contourMaterial = contourLinesGroup.userData.sharedMaterial as THREE.ShaderMaterial;
     }
