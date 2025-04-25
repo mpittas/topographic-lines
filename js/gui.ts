@@ -22,29 +22,22 @@ export function setupGUI(
 
     // Add onChange handlers to hide contours during drag
 
-    // Terrain Folder - Controls BASE values for randomization center point
+// Terrain Folder - Controls BASE values for randomization center point
     const terrainFolder = gui.addFolder('Terrain Shape');
-    terrainFolder.add(baseConfig, 'terrainMaxHeight', 10, 300, 5).name('Base Max Height')
+    terrainFolder.add(baseConfig, 'terrainMaxHeight', 10, 300, 5).name('Height')
         .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; }) // Hide on drag
         .onFinishChange(() => {
             updateVisualizationCallback();
             if (contourLinesGroup) contourLinesGroup.visible = true; // Show on finish
         });
-    terrainFolder.add(baseConfig, 'noiseScale', 10, 500, 10).name('Base Feature Scale')
-        .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; }) // Hide on drag
-        .onFinishChange(() => {
-            updateVisualizationCallback();
-            if (contourLinesGroup) contourLinesGroup.visible = true; // Show on finish
-        });
-    terrainFolder.add(baseConfig, 'minTerrainHeightFactor', 0, 0.5, 0.01).name('Base Min Height Factor')
+    terrainFolder.add(baseConfig, 'noiseScale', 10, 500, 10).name('Feature Size')
         .onChange(() => { if (contourLinesGroup) contourLinesGroup.visible = false; }) // Hide on drag
         .onFinishChange(() => {
             updateVisualizationCallback();
             if (contourLinesGroup) contourLinesGroup.visible = true; // Show on finish
         });
     terrainFolder.open();
-
-    // Contours Folder
+// Contours Folder
     const contoursFolder = gui.addFolder('Contours');
     // Use onFinishChange for interval to avoid regenerating on every drag increment
     contoursFolder.add(config, 'contourInterval', 1, 50, 1).name('Interval')
