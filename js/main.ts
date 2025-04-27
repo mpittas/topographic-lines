@@ -15,6 +15,75 @@ let contourLinesGroup: THREE.Group;
 let baseContourColor = new THREE.Color(config.contourColor);
 let fadeToBgColor = new THREE.Color(config.backgroundColor);
 
+// --- Color Helper Functions ---
+
+// Converts hex color string (#RRGGBB or #RGB) to {r, g, b} object
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+    // Expand shorthand form (e.g. '03F') to full form (e.g. '0033FF')
+    const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+        ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16),
+        }
+        : null;
+}
+
+// Calculates relative luminance from RGB values
+function luminance(r: number, g: number, b: number): number {
+    const a = [r, g, b].map((v) => {
+        v /= 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+}
+
+// Calculates WCAG contrast ratio between two RGB colors
+function contrastRatio(rgb1: { r: number; g: number; b: number }, rgb2: { r: number; g: number; b: number }): number {
+    const lum1 = luminance(rgb1.r, rgb1.g, rgb1.b);
+    const lum2 = luminance(rgb2.r, rgb2.g, rgb2.b);
+    const brightest = Math.max(lum1, lum2);
+    const darkest = Math.min(lum1, lum2);
+    return (brightest + 0.05) / (darkest + 0.05);
+}
+
+// Generates a random hex color with sufficient contrast against a background color
+function generateRandomContrastingColor(backgroundHex: string, minContrast: number = 4.5): string {
+    const backgroundRgb = hexToRgb(backgroundHex);
+    if (!backgroundRgb) {
+        console.error("Invalid background color for contrast check.");
+        return `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`; // fallback
+    }
+
+    let attempts = 0;
+    const maxAttempts = 50; // Prevent infinite loops
+
+    while (attempts < maxAttempts) {
+        attempts++;
+        // Generate random color favoring higher saturation/lightness for better contrast chance
+        const h = Math.random();
+        const s = 0.6 + Math.random() * 0.4; // Saturation between 0.6 and 1.0
+        const l = 0.4 + Math.random() * 0.4; // Lightness between 0.4 and 0.8
+        const tempColor = new THREE.Color().setHSL(h, s, l);
+        const randomHex = `#${tempColor.getHexString()}`;
+        const randomRgb = { r: tempColor.r * 255, g: tempColor.g * 255, b: tempColor.b * 255 };
+
+        if (contrastRatio(randomRgb, backgroundRgb) >= minContrast) {
+            console.log(`Generated contrasting color: ${randomHex} (Contrast: ${contrastRatio(randomRgb, backgroundRgb).toFixed(2)}:${1}) after ${attempts} attempts.`);
+            return randomHex;
+        }
+    }
+
+    console.warn(`Could not find a color with ${minContrast}:1 contrast after ${maxAttempts} attempts. Using last generated color.`);
+    // Fallback to the last generated color if no contrasting one is found quickly
+    const fallbackColor = new THREE.Color().setHSL(Math.random(), 0.7, 0.6);
+     return `#${fallbackColor.getHexString()}`;
+}
+
 // Initializes Three.js scene, terrain and GUI controls
 function init(): void {
     const sceneElements = initScene(document.body);
@@ -44,11 +113,29 @@ function init(): void {
 function updateVisualization(shouldRandomize: boolean = false, updateStyleOnly: boolean = false): void {
     console.log(`Updating visualization... (Randomize: ${shouldRandomize}, Style Only: ${updateStyleOnly})`);
 
-    // --- Terrain Data Generation ---
+    // --- Terrain Data Generation --- // & Color Randomization
     if (!updateStyleOnly) {
         // Only regenerate terrain geometry if updateStyleOnly is false
         if (shouldRandomize) {
             randomizeTerrainSettings();
+
+            // --- Generate New Random Background Color ---
+            // Favor lighter colors for background (higher lightness)
+            const hBg = Math.random();
+            const sBg = 0.3 + Math.random() * 0.4; // Saturation between 0.3 and 0.7
+            const lBg = 0.75 + Math.random() * 0.2; // Lightness between 0.75 and 0.95
+            const newBgColorThree = new THREE.Color().setHSL(hBg, sBg, lBg);
+            const newBackgroundColor = `#${newBgColorThree.getHexString()}`;
+            config.backgroundColor = newBackgroundColor;
+            console.log("New background color:", config.backgroundColor);
+            // ------------------------------------------
+
+            // --- Generate New Contrasting Contour Color ---
+            // Ensure contour contrasts with the *new* background
+            config.contourColor = generateRandomContrastingColor(config.backgroundColor);
+            console.log("New contour color:", config.contourColor);
+            // -------------------------------------------
+
             // Sync baseConfig with randomized values for GUI display
             baseConfig.terrainMaxHeight = config.terrainMaxHeight;
             baseConfig.noiseScale = config.noiseScale;
