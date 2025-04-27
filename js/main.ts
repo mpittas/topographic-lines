@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { config, baseConfig, randomRanges, updateDerivedConfig, baseContourColor as configBaseContourColor, fadeToBgColor as configFadeToBgColor, Styles } from './config.js';
+// @ts-ignore – importing JS module with runtime exports unknown to TypeScript
 import { generateTerrain, generateContourLines, createTerrainBorder, randomizeTerrainSettings } from './terrain.js';
 import { initScene, updateFog, updateControls, disposeScene, camera as sceneCamera } from './scene.js';
 import { setupGUI, updateGUI } from './gui.js';
@@ -11,6 +12,9 @@ let controls: OrbitControls;
 let terrainMesh: THREE.Mesh | null;
 let terrainBorder: THREE.Line | null;
 let contourLinesGroup: THREE.Group;
+let raycaster: THREE.Raycaster;
+let mouse: THREE.Vector2;
+let hoveredPoint: THREE.Vector3 | null = null;
 
 let baseContourColor = new THREE.Color(config.contourColor);
 let fadeToBgColor = new THREE.Color(config.backgroundColor);
@@ -105,6 +109,18 @@ function init(): void {
         updateFadingLinesFogUniforms,
         contourLinesGroup
     );
+
+    // --- Hover Interactivity Setup ---
+    raycaster = new THREE.Raycaster();
+    // Increase line intersection threshold so hovering is easier
+    (raycaster.params as any).Line = { threshold: 5 };
+
+    mouse = new THREE.Vector2();
+    window.addEventListener('mousemove', (event: MouseEvent) => {
+        // Convert screen coords to normalized device coords (-1 to +1)
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    });
 
     animate();
 }
@@ -293,6 +309,67 @@ function animate(): void {
             contourLinesGroup.userData.sharedMaterial instanceof THREE.LineBasicMaterial &&
             contourLinesGroup.userData.sharedMaterial.vertexColors) {
              if (!contourLinesGroup.visible) contourLinesGroup.visible = true;
+        }
+    }
+
+    // --- Wiggle animation for surrounding lines ---
+    if (hoveredPoint && contourLinesGroup) {
+        const time = performance.now() * 0.002; // speed factor
+        const amp = 4.0; // larger amplitude for pronounced motion
+        const coordFreq = 0.12; // frequency multiplier applied to world coordinates for phase
+        const falloff = 60; // tighter radius for influence
+
+        contourLinesGroup.children.forEach(child => {
+            const line = child as THREE.LineSegments;
+            const geom = line.geometry as THREE.BufferGeometry;
+            const posAttr = geom.attributes.position as THREE.BufferAttribute;
+            if (!geom.userData.originalPositions) {
+                geom.userData.originalPositions = (posAttr.array as Float32Array).slice();
+            }
+            const original = geom.userData.originalPositions as Float32Array;
+
+            for (let i = 0; i < posAttr.count; i++) {
+                const ox = original[i * 3];
+                const oy = original[i * 3 + 1];
+                const oz = original[i * 3 + 2];
+
+                const dx = ox - hoveredPoint!.x;
+                const dz = oz - hoveredPoint!.z;
+                const distSq = dx * dx + dz * dz;
+                const influence = Math.exp(-distSq / (falloff * falloff));
+
+                // Phase based on world coordinates to keep duplicates consistent
+                const phase = (ox + oz) * coordFreq;
+                const offset = Math.sin(phase + time * 2.0) * amp * influence;
+
+                posAttr.setXYZ(i, ox, oy + offset, oz);
+            }
+            posAttr.needsUpdate = true;
+        });
+    } else if (contourLinesGroup) {
+        // Restore vertices to original positions when not hovering anything
+        contourLinesGroup.children.forEach(child => {
+            const line = child as THREE.LineSegments;
+            const geom = line.geometry as THREE.BufferGeometry;
+            const posAttr = geom.attributes.position as THREE.BufferAttribute;
+            if (!geom.userData.originalPositions) return;
+            const original = geom.userData.originalPositions as Float32Array;
+            for (let i = 0; i < posAttr.count; i++) {
+                posAttr.setXYZ(i, original[i * 3], original[i * 3 + 1], original[i * 3 + 2]);
+            }
+            posAttr.needsUpdate = true;
+        });
+    }
+
+    // --- Hover Detection (per frame) ---
+    if (raycaster && contourLinesGroup && sceneCamera) {
+        raycaster.setFromCamera(mouse, sceneCamera);
+        const intersects = raycaster.intersectObjects(contourLinesGroup.children, false);
+
+        if (intersects.length > 0) {
+            hoveredPoint = intersects[0].point.clone();
+        } else {
+            hoveredPoint = null;
         }
     }
 
