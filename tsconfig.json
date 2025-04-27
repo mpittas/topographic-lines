@@ -10,5 +10,7 @@
   },
   "include": [
     "js/**/*.ts",
+    "shaders/**/*.glsl",
+    "glsl.d.ts"
   ]
 }

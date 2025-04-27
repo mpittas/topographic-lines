@@ -40,12 +40,12 @@ export const config = {
     fogIntensity: 0.5,
 
     minZoomDistance: 380,
-    maxZoomDistance: 540,
+    maxZoomDistance: 740,
     enableZoom: true,
     enableRotate: true,
     enableVerticalRotate: false,
     fixedVerticalAngle: Math.PI / 3,
-    cameraMinPitchAngle: 0.2,   // Minimum angle above horizon (radians)
+    cameraMinPitchAngle: 0.1,   // Minimum angle above horizon (radians)
 
     showTerrainBorder: false,
     style: Styles.FADING_LINES // Default style
