@@ -50,25 +50,15 @@ export function updateFog(): void {
     const bgColor = config.backgroundColor;
     const minDistance = config.minFadeDistance;
     const maxDistance = config.maxFadeDistance;
-    const range = maxDistance - minDistance;
 
+    // Smooth linear fog mapping: no fog at 0, increasing fade range at full intensity
     if (intensity <= 0) {
-        if (scene.fog) {
-            scene.fog.color.set(bgColor);
-            if ('near' in scene.fog) {
-                scene.fog.near = maxDistance * 100;
-                scene.fog.far = maxDistance * 101;
-            } else {
-                // For FogExp2, we can't set near/far directly
-                scene.fog = new THREE.Fog(bgColor, maxDistance * 100, maxDistance * 101);
-            }
-        } else {
-            scene.fog = new THREE.Fog(bgColor, maxDistance * 100, maxDistance * 101);
-        }
+        // Disable scene fog entirely
+        scene.fog = null;
     } else {
-        const adjustedIntensity = intensity * intensity;
-        const near = maxDistance - range * adjustedIntensity;
-        const far = maxDistance + range * (1 - adjustedIntensity) * 1.2;
+        // Linearly interpolate fog start (near) between maxDistance and minDistance
+        const near = maxDistance - (maxDistance - minDistance) * intensity;
+        const far = maxDistance;
 
         if (scene.fog) {
             scene.fog.color.set(bgColor);
@@ -76,7 +66,6 @@ export function updateFog(): void {
                 scene.fog.near = near;
                 scene.fog.far = far;
             } else {
-                // For FogExp2, we can't set near/far directly
                 scene.fog = new THREE.Fog(bgColor, near, far);
             }
         } else {
