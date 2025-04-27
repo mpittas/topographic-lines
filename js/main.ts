@@ -15,14 +15,6 @@ let contourLinesGroup: THREE.Group;
 let baseContourColor = new THREE.Color(config.contourColor);
 let fadeToBgColor = new THREE.Color(config.backgroundColor);
 
-// --- Hover Effect Variables ---
-const clock = new THREE.Clock();
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2(); // Normalized device coordinates (-1 to +1)
-let hoverPoint = new THREE.Vector3(0, -9999, 0); // World coordinates of hover intersection, default far away
-let lastHoverPoint = new THREE.Vector3().copy(hoverPoint);
-const hoverLerpFactor = 0.1; // Smoothing factor for hover point movement
-
 // Initializes Three.js scene, terrain and GUI controls
 function init(): void {
     const sceneElements = initScene(document.body);
@@ -45,24 +37,7 @@ function init(): void {
         contourLinesGroup
     );
 
-    // Add mouse move listener
-    renderer.domElement.addEventListener('mousemove', onMouseMove, false);
-    // Add listener for mouse leaving the canvas to reset hover
-    renderer.domElement.addEventListener('mouseleave', onMouseLeave, false);
-
     animate();
-}
-
-// --- Mouse Event Handlers ---
-function onMouseMove(event: MouseEvent): void {
-    // Calculate mouse position in normalized device coordinates
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-}
-
-function onMouseLeave(): void {
-    // Reset hover point gradually when mouse leaves
-    hoverPoint.set(0, -9999, 0);
 }
 
 // Regenerates terrain and updates all visual elements
@@ -211,30 +186,12 @@ function exportToPNG(): void {
     link.click();
 }
 
-const tempVec3 = new THREE.Vector3();
-const tempColor = new THREE.Color();
-
 // Main animation loop
 function animate(): void {
     requestAnimationFrame(animate);
-    const elapsedTime = clock.getElapsedTime();
 
     if (controls && controls.enabled && (config.enableRotate || config.enableVerticalRotate || config.enableZoom)) {
          controls.update();
-    }
-
-    // --- Update Hover Effect --- 
-    if (sceneCamera && terrainMesh) {
-        raycaster.setFromCamera(mouse, sceneCamera);
-        const intersects = raycaster.intersectObject(terrainMesh);
-
-        if (intersects.length > 0) {
-            // Smoothly interpolate to the new hover point
-            hoverPoint.lerp(intersects[0].point, hoverLerpFactor);
-        } else {
-             // Smoothly interpolate back to the 'off-screen' position
-            hoverPoint.lerp(new THREE.Vector3(0, -9999, 0), hoverLerpFactor * 0.5); // Slower return
-        }
     }
 
     if (contourLinesGroup && sceneCamera) {
@@ -242,12 +199,6 @@ function animate(): void {
         if (config.style === Styles.FADING_LINES &&
             contourLinesGroup.userData.sharedMaterial instanceof THREE.ShaderMaterial) {
             const shaderMaterial = contourLinesGroup.userData.sharedMaterial;
-            if (shaderMaterial.uniforms.u_hoverPoint) {
-                shaderMaterial.uniforms.u_hoverPoint.value.copy(hoverPoint);
-            }
-            if (shaderMaterial.uniforms.u_time) {
-                shaderMaterial.uniforms.u_time.value = elapsedTime;
-            }
         }
 
         // Visibility check for LINES_ONLY (remains the same)
@@ -300,18 +251,12 @@ export function updateFadingLinesFogUniforms(): void {
         if (shaderMaterial.uniforms.u_terrainHalfSize) {
             shaderMaterial.uniforms.u_terrainHalfSize.value = config.terrainSize / 2.0;
         }
-
-        // Note: u_hoverPoint and u_time are updated in the animate loop
     }
 }
 
 document.addEventListener('DOMContentLoaded', init);
 // Remove listener on dispose (optional but good practice)
 function cleanup(): void {
-    if (renderer) {
-        renderer.domElement.removeEventListener('mousemove', onMouseMove);
-        renderer.domElement.removeEventListener('mouseleave', onMouseLeave);
-    }
     disposeScene();
 }
 window.addEventListener('beforeunload', cleanup);
