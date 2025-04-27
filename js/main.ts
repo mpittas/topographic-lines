@@ -315,9 +315,10 @@ function animate(): void {
     // --- Wiggle animation for surrounding lines ---
     if (hoveredPoint && contourLinesGroup) {
         const time = performance.now() * 0.002; // speed factor
-        const amp = 4.0; // larger amplitude for pronounced motion
-        const coordFreq = 0.12; // frequency multiplier applied to world coordinates for phase
-        const falloff = 60; // tighter radius for influence
+        const amp = 13.0; // increased amplitude for stronger distortion
+        const coordFreq = 0.1; // base frequency for wave phase
+        const noiseFreq = 0.15; // frequency for pseudo noise
+        const falloff = 40; // radius of influence
 
         contourLinesGroup.children.forEach(child => {
             const line = child as THREE.LineSegments;
@@ -338,9 +339,12 @@ function animate(): void {
                 const distSq = dx * dx + dz * dz;
                 const influence = Math.exp(-distSq / (falloff * falloff));
 
-                // Phase based on world coordinates to keep duplicates consistent
                 const phase = (ox + oz) * coordFreq;
-                const offset = Math.sin(phase + time * 2.0) * amp * influence;
+                const wave = Math.sin(phase + time * 3.0);
+                // Simple pseudo-noise: product of sinusoid on x and z with different frequencies/time
+                const noise = Math.sin(ox * noiseFreq + time * 5.0) * Math.cos(oz * noiseFreq + time * 4.0);
+                const combined = (wave * 0.4 + noise * 0.6); // blend wave and noise
+                const offset = combined * amp * influence;
 
                 posAttr.setXYZ(i, ox, oy + offset, oz);
             }
