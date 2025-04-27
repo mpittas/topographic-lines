@@ -43,7 +43,18 @@ export function generateTerrain(): THREE.Mesh {
         const combinedNoise = (noise1 * 0.97) + (noise2 * 0.03);
         const expNoise = (combinedNoise + 1) / 2;
         const slopeFactor = 1 + Math.abs(noise1 - noise2) * 0.1;
+        // --- Additional low-frequency noise modulation for varied hill heights ---
+        //   A very low-frequency noise layer is used as a height multiplier so that
+        //   different regions of the terrain can have noticeably different maximum
+        //   heights (taller peaks, deeper valleys).
+        //   The value is mapped from [0,1] → [0.6, 1.4] to keep it within reasonable
+        //   bounds while still giving a dramatic difference.
+        const lowFreqNoise = (noise.noise(x / (currentNoiseScale * 3.0), z / (currentNoiseScale * 3.0), noiseSeed + 200) + 1) / 2; // 0-1
+        const heightVariation = THREE.MathUtils.lerp(0.6, 1.4, lowFreqNoise); // 0.6 → 1.4 multiplier
         let finalHeight = expNoise * currentMaxHeight * slopeFactor;
+
+        // Apply the height variation multiplier
+        finalHeight *= heightVariation;
 
         if (currentPlateauVolume > 0 && finalHeight > plateauCutoffHeight) {
              finalHeight = plateauCutoffHeight + (finalHeight - plateauCutoffHeight) * (1 - currentPlateauVolume);
