@@ -15,6 +15,7 @@ let contourLinesGroup: THREE.Group;
 let raycaster: THREE.Raycaster;
 let mouse: THREE.Vector2;
 let hoveredPoint: THREE.Vector3 | null = null;
+let hasMouseMoved: boolean = false;
 
 let baseContourColor = new THREE.Color(config.contourColor);
 let fadeToBgColor = new THREE.Color(config.backgroundColor);
@@ -117,6 +118,7 @@ function init(): void {
 
     mouse = new THREE.Vector2();
     window.addEventListener('mousemove', (event: MouseEvent) => {
+        hasMouseMoved = true;
         // Convert screen coords to normalized device coords (-1 to +1)
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -366,7 +368,8 @@ function animate(): void {
     }
 
     // --- Hover Detection (per frame) ---
-    if (raycaster && contourLinesGroup && sceneCamera) {
+    // Replace condition to only hover after movement
+    if (raycaster && contourLinesGroup && sceneCamera && hasMouseMoved) {
         raycaster.setFromCamera(mouse, sceneCamera);
         const intersects = raycaster.intersectObjects(contourLinesGroup.children, false);
 
@@ -375,6 +378,8 @@ function animate(): void {
         } else {
             hoveredPoint = null;
         }
+    } else {
+        hoveredPoint = null;
     }
 
     if (renderer && scene && sceneCamera) {
